@@ -1,0 +1,40 @@
+@media print {
+  @page {
+    margin: 1.2cm;
+    size: letter;
+  }
+
+  .no-print,
+  .print-controls {
+    display: none !important;
+  }
+
+  .print-guide {
+    background: white !important;
+    color: black !important;
+  }
+
+  .print-persona {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .print-cluster {
+    break-before: auto;
+  }
+
+  .print-cluster + .print-cluster {
+    break-before: page;
+    page-break-before: always;
+  }
+
+  a[href]::after {
+    content: none;
+  }
+}
+
+@media screen {
+  .print-guide .print-controls a {
+    color: rgb(212 212 216);
+  }
+}
