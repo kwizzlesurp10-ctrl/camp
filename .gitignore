@@ -42,3 +42,7 @@ next-env.d.ts
 
 # claude code local settings
 .claude/
+
+# Accidental copies / local tooling (not part of camp app)
+UsersKeithllm-daily-task-log/
+.venv/

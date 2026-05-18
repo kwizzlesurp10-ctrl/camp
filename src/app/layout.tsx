@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -16,6 +16,9 @@ export const metadata: Metadata = {
   title: "Northern Camp Staff Personas",
   description:
     "Interactive archetype map for northern teenage summer camp staff — training, simulations, and multi-agent orchestration.",
+};
+
+export const viewport: Viewport = {
   themeColor: "#09090b",
 };
 

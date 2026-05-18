@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   buildHrefWithoutPersona,
@@ -20,16 +20,10 @@ export function usePersonaDeepLink(): UsePersonaDeepLinkResult {
   const router = useRouter();
   const pathname = usePathname();
 
-  const urlPersonaId = parsePersonaIdParam(searchParams.get("persona"));
-  const [selectedId, setSelectedIdState] = useState<string | null>(urlPersonaId);
-
-  useEffect(() => {
-    setSelectedIdState(urlPersonaId);
-  }, [urlPersonaId]);
+  const selectedId = parsePersonaIdParam(searchParams.get("persona"));
 
   const setSelectedId = useCallback(
     (id: string | null) => {
-      setSelectedIdState(id);
       const href = id
         ? buildPersonaHref(pathname, id, searchParams)
         : buildHrefWithoutPersona(pathname, searchParams);
