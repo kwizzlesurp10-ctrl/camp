@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 import type { Persona } from "@/data/personas";
 import { getClusterById } from "@/data/personas";
 import { PersonaTag } from "@/components/persona/PersonaTag";
@@ -21,6 +22,40 @@ export function PersonaDetailPanel({
   printHref,
 }: PersonaDetailPanelProps): React.ReactElement | null {
   const { startViewTransition } = useViewTransition();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const previouslyFocusedElement = useRef<HTMLElement | null>(null);
+
+  // Store the element that had focus before the panel opened
+  useEffect(() => {
+    if (persona) {
+      previouslyFocusedElement.current = document.activeElement as HTMLElement | null;
+    }
+  }, [persona]);
+
+  // Focus management: move focus into panel when it opens, restore on close
+  useEffect(() => {
+    if (!persona) {
+      // Panel is closing - restore focus
+      if (previouslyFocusedElement.current) {
+        previouslyFocusedElement.current.focus();
+      }
+      return;
+    }
+
+    // Panel just opened - move focus inside
+    const focusable = panelRef.current?.querySelector<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+
+    // Focus the first focusable element (usually Close button area) or the panel itself
+    setTimeout(() => {
+      if (focusable) {
+        focusable.focus();
+      } else {
+        panelRef.current?.focus();
+      }
+    }, 50); // small delay to allow view transition to settle
+  }, [persona]);
 
   const handleClose = () => {
     startViewTransition(() => {
@@ -42,9 +77,11 @@ export function PersonaDetailPanel({
         style={{ viewTransitionName: TRANSITION_NAMES.personaBackdrop }}
       />
       <aside
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="persona-detail-title"
+        tabIndex={-1}
         className="fixed right-0 top-0 z-50 h-full w-full max-w-lg bg-zinc-950 border-l border-zinc-800 shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-300 will-change-[transform]"
         style={{ viewTransitionName: TRANSITION_NAMES.personaPanel }}
       >
