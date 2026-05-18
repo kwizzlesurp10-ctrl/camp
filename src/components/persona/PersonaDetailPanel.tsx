@@ -5,7 +5,7 @@ import type { Persona } from "@/data/personas";
 import { getClusterById } from "@/data/personas";
 import { PersonaTag } from "@/components/persona/PersonaTag";
 import { serializePersonaForAgents } from "@/lib/persona-export";
-import { useViewTransition } from "@/hooks/useViewTransition";
+import { useViewTransition, TRANSITION_NAMES } from "@/lib/animations";
 
 type PersonaDetailPanelProps = {
   persona: Persona | null;
@@ -39,14 +39,14 @@ export function PersonaDetailPanel({
         aria-label="Close persona details"
         className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 will-change-[opacity]"
         onClick={handleClose}
-        style={{ viewTransitionName: 'persona-backdrop' }}
+        style={{ viewTransitionName: TRANSITION_NAMES.personaBackdrop }}
       />
       <aside
         role="dialog"
         aria-modal="true"
         aria-labelledby="persona-detail-title"
         className="fixed right-0 top-0 z-50 h-full w-full max-w-lg bg-zinc-950 border-l border-zinc-800 shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-300 will-change-[transform]"
-        style={{ viewTransitionName: 'persona-panel' }}
+        style={{ viewTransitionName: TRANSITION_NAMES.personaPanel }}
       >
         <div className="sticky top-0 z-10 flex items-center justify-between gap-4 px-6 py-4 bg-zinc-950/90 backdrop-blur border-b border-zinc-800">
           <p className="text-xs uppercase tracking-[2px] text-emerald-400 font-mono">
