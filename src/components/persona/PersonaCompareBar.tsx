@@ -1,6 +1,7 @@
 "use client";
 
 import type { Persona } from "@/data/personas";
+import { useViewTransition, TRANSITION_NAMES } from "@/lib/animations";
 
 type PersonaCompareBarProps = {
   personas: Persona[];
@@ -13,15 +14,33 @@ export function PersonaCompareBar({
   onClear,
   onRemove,
 }: PersonaCompareBarProps): React.ReactElement | null {
+  const { startViewTransition } = useViewTransition();
+
+  const handleRemove = (id: string) => {
+    startViewTransition(() => {
+      onRemove(id);
+    });
+  };
+
+  const handleClear = () => {
+    startViewTransition(() => {
+      onClear();
+    });
+  };
+
   if (personas.length === 0) return null;
 
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30 w-[min(100%,42rem)] px-4">
       <div className="rounded-2xl border border-amber-500/30 bg-zinc-900/95 backdrop-blur-xl shadow-2xl shadow-amber-500/10 p-4">
-        <CompareHeader personas={personas} onClear={onClear} />
+        <CompareHeader personas={personas} onClear={handleClear} />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {personas.map((persona) => (
-            <CompareCard key={persona.id} persona={persona} onRemove={onRemove} />
+            <CompareCard
+              key={persona.id}
+              persona={persona}
+              onRemove={handleRemove}
+            />
           ))}
         </div>
       </div>
@@ -60,7 +79,10 @@ function CompareCard({
   onRemove: (id: string) => void;
 }): React.ReactElement {
   return (
-    <div className="rounded-xl bg-zinc-800/80 p-3 border border-zinc-700 relative">
+    <div
+      className="rounded-xl bg-zinc-800/80 p-3 border border-zinc-700 relative"
+      style={{ viewTransitionName: `${TRANSITION_NAMES.personaCard}-${persona.id}` }}
+    >
       <button
         type="button"
         aria-label={`Remove ${persona.title}`}

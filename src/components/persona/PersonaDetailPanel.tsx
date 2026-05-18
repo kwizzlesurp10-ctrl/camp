@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import type { Persona } from "@/data/personas";
 import { getClusterById } from "@/data/personas";
 import { PersonaTag } from "@/components/persona/PersonaTag";
 import { serializePersonaForAgents } from "@/lib/persona-export";
+import { useViewTransition, TRANSITION_NAMES } from "@/lib/animations";
 
 type PersonaDetailPanelProps = {
   persona: Persona | null;
@@ -19,6 +21,53 @@ export function PersonaDetailPanel({
   shareHref,
   printHref,
 }: PersonaDetailPanelProps): React.ReactElement | null {
+  const { startViewTransition } = useViewTransition();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const previouslyFocusedElement = useRef<HTMLElement | null>(null);
+
+  // Simple loading state simulation (can be replaced with real async data later)
+  const [isContentReady, setIsContentReady] = useState(false);
+
+  // Store the element that had focus before the panel opened
+  useEffect(() => {
+    if (persona) {
+      previouslyFocusedElement.current = document.activeElement as HTMLElement | null;
+      setIsContentReady(false);
+
+      // Simulate content loading (remove this when real data fetching exists)
+      const timer = setTimeout(() => setIsContentReady(true), 80);
+      return () => clearTimeout(timer);
+    }
+  }, [persona]);
+
+  // Focus management
+  useEffect(() => {
+    if (!persona) {
+      if (previouslyFocusedElement.current) {
+        previouslyFocusedElement.current.focus();
+      }
+      return;
+    }
+
+    const focusable = panelRef.current?.querySelector<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+
+    setTimeout(() => {
+      if (focusable) {
+        focusable.focus();
+      } else {
+        panelRef.current?.focus();
+      }
+    }, 60);
+  }, [persona]);
+
+  const handleClose = () => {
+    startViewTransition(() => {
+      onClose();
+    });
+  };
+
   if (!persona) return null;
 
   const cluster = getClusterById(persona.clusterId);
@@ -29,13 +78,17 @@ export function PersonaDetailPanel({
         type="button"
         aria-label="Close persona details"
         className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 will-change-[opacity]"
-        onClick={onClose}
+        onClick={handleClose}
+        style={{ viewTransitionName: TRANSITION_NAMES.personaBackdrop }}
       />
       <aside
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="persona-detail-title"
+        tabIndex={-1}
         className="fixed right-0 top-0 z-50 h-full w-full max-w-lg bg-zinc-950 border-l border-zinc-800 shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-300 will-change-[transform]"
+        style={{ viewTransitionName: TRANSITION_NAMES.personaPanel }}
       >
         <div className="sticky top-0 z-10 flex items-center justify-between gap-4 px-6 py-4 bg-zinc-950/90 backdrop-blur border-b border-zinc-800">
           <p className="text-xs uppercase tracking-[2px] text-emerald-400 font-mono">
@@ -43,20 +96,47 @@ export function PersonaDetailPanel({
           </p>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="text-zinc-400 hover:text-zinc-100 text-sm px-3 py-1 rounded-lg border border-zinc-700 hover:border-zinc-500 transition-colors"
           >
             Close
           </button>
         </div>
 
-        <DetailContent
-          persona={persona}
-          shareHref={shareHref}
-          printHref={printHref}
-        />
+        {!isContentReady ? (
+          <PanelSkeleton />
+        ) : (
+          <DetailContent
+            persona={persona}
+            shareHref={shareHref}
+            printHref={printHref}
+          />
+        )}
       </aside>
     </>
+  );
+}
+
+function PanelSkeleton() {
+  return (
+    <div className="px-6 py-6 space-y-8 animate-pulse">
+      <div className="h-8 w-3/4 bg-zinc-800 rounded" />
+      <div className="h-4 w-1/4 bg-zinc-800 rounded" />
+      <div className="space-y-3">
+        <div className="h-4 bg-zinc-800 rounded w-full" />
+        <div className="h-4 bg-zinc-800 rounded w-5/6" />
+      </div>
+      <div className="grid grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <div className="h-3 w-20 bg-zinc-800 rounded" />
+          <div className="h-16 bg-zinc-800 rounded" />
+        </div>
+        <div className="space-y-2">
+          <div className="h-3 w-20 bg-zinc-800 rounded" />
+          <div className="h-16 bg-zinc-800 rounded" />
+        </div>
+      </div>
+    </div>
   );
 }
 
