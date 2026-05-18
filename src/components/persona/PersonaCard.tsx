@@ -2,6 +2,7 @@
 
 import type { Persona } from "@/data/personas";
 import { PersonaTag } from "@/components/persona/PersonaTag";
+import { useViewTransition } from "@/hooks/useViewTransition";
 
 type PersonaCardProps = {
   persona: Persona;
@@ -18,15 +19,23 @@ export function PersonaCard({
   onSelect,
   onToggleCompare,
 }: PersonaCardProps): React.ReactElement {
+  const { startViewTransition } = useViewTransition();
+
+  const handleSelect = () => {
+    startViewTransition(() => {
+      onSelect(persona.id);
+    });
+  };
+
   return (
     <article
       role="button"
       tabIndex={0}
-      onClick={() => onSelect(persona.id)}
+      onClick={handleSelect}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
-          onSelect(persona.id);
+          handleSelect();
         }
       }}
       data-persona-id={persona.id}
@@ -38,6 +47,7 @@ export function PersonaCard({
           : "border-zinc-800",
         isCompared ? "outline outline-2 outline-amber-500/40 outline-offset-2" : "",
       ].join(" ")}
+      style={{ viewTransitionName: 'persona-card' }}
     >
       <header className="persona-header">
         <h3 className="text-xl font-semibold tracking-tight text-zinc-100">
@@ -66,7 +76,7 @@ export function PersonaCard({
             "text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-full border transition-colors shrink-0",
             isCompared
               ? "border-amber-500/50 text-amber-400 bg-amber-500/10"
-              : "border-zinc-700 text-zinc-500 hover:border-zinc-500 hover:text-zinc-300",
+            : "border-zinc-700 text-zinc-500 hover:border-zinc-500 hover:text-zinc-300",
           ].join(" ")}
           aria-pressed={isCompared}
         >
