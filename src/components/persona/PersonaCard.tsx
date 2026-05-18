@@ -2,7 +2,7 @@
 
 import type { Persona } from "@/data/personas";
 import { PersonaTag } from "@/components/persona/PersonaTag";
-import { useViewTransition } from "@/hooks/useViewTransition";
+import { useViewTransition, TRANSITION_NAMES } from "@/lib/animations";
 
 type PersonaCardProps = {
   persona: Persona;
@@ -47,7 +47,7 @@ export function PersonaCard({
           : "border-zinc-800",
         isCompared ? "outline outline-2 outline-amber-500/40 outline-offset-2" : "",
       ].join(" ")}
-      style={{ viewTransitionName: 'persona-card' }}
+      style={{ viewTransitionName: TRANSITION_NAMES.personaCard }}
     >
       <header className="persona-header">
         <h3 className="text-xl font-semibold tracking-tight text-zinc-100">
