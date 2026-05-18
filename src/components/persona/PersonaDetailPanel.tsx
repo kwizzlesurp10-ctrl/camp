@@ -28,14 +28,14 @@ export function PersonaDetailPanel({
       <button
         type="button"
         aria-label="Close persona details"
-        className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+        className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 will-change-[opacity]"
         onClick={onClose}
       />
       <aside
         role="dialog"
         aria-modal="true"
         aria-labelledby="persona-detail-title"
-        className="fixed right-0 top-0 z-50 h-full w-full max-w-lg bg-zinc-950 border-l border-zinc-800 shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-300"
+        className="fixed right-0 top-0 z-50 h-full w-full max-w-lg bg-zinc-950 border-l border-zinc-800 shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-300 will-change-[transform]"
       >
         <div className="sticky top-0 z-10 flex items-center justify-between gap-4 px-6 py-4 bg-zinc-950/90 backdrop-blur border-b border-zinc-800">
           <p className="text-xs uppercase tracking-[2px] text-emerald-400 font-mono">
@@ -99,7 +99,7 @@ function DetailContent({
             {persona.motivations.map((item) => (
               <li key={item}>• {item}</li>
             ))}
-          </ul>
+        </ul>
         </DetailBlock>
         <DetailBlock label="Pain Points" body={persona.painPoints} />
       </div>

@@ -90,3 +90,18 @@ details summary::-webkit-details-marker {
 .duration-300 {
   animation-duration: 300ms;
 }
+
+/* Reduced motion support - respects user preference for vestibular safety (WCAG 2.2 SC 2.3.3) */
+@media (prefers-reduced-motion: reduce) {
+  .animate-in,
+  .fade-in,
+  .slide-in-from-right,
+  .transition-all,
+  .transition-colors {
+    animation: none !important;
+    transition: none !important;
+  }
+  html {
+    scroll-behavior: auto !important;
+  }
+}
