@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Persona } from "@/data/personas";
 import { getClusterById } from "@/data/personas";
 import { PersonaTag } from "@/components/persona/PersonaTag";
@@ -25,36 +25,41 @@ export function PersonaDetailPanel({
   const panelRef = useRef<HTMLDivElement>(null);
   const previouslyFocusedElement = useRef<HTMLElement | null>(null);
 
+  // Simple loading state simulation (can be replaced with real async data later)
+  const [isContentReady, setIsContentReady] = useState(false);
+
   // Store the element that had focus before the panel opened
   useEffect(() => {
     if (persona) {
       previouslyFocusedElement.current = document.activeElement as HTMLElement | null;
+      setIsContentReady(false);
+
+      // Simulate content loading (remove this when real data fetching exists)
+      const timer = setTimeout(() => setIsContentReady(true), 80);
+      return () => clearTimeout(timer);
     }
   }, [persona]);
 
-  // Focus management: move focus into panel when it opens, restore on close
+  // Focus management
   useEffect(() => {
     if (!persona) {
-      // Panel is closing - restore focus
       if (previouslyFocusedElement.current) {
         previouslyFocusedElement.current.focus();
       }
       return;
     }
 
-    // Panel just opened - move focus inside
     const focusable = panelRef.current?.querySelector<HTMLElement>(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
 
-    // Focus the first focusable element (usually Close button area) or the panel itself
     setTimeout(() => {
       if (focusable) {
         focusable.focus();
       } else {
         panelRef.current?.focus();
       }
-    }, 50); // small delay to allow view transition to settle
+    }, 60);
   }, [persona]);
 
   const handleClose = () => {
@@ -98,13 +103,40 @@ export function PersonaDetailPanel({
           </button>
         </div>
 
-        <DetailContent
-          persona={persona}
-          shareHref={shareHref}
-          printHref={printHref}
-        />
+        {!isContentReady ? (
+          <PanelSkeleton />
+        ) : (
+          <DetailContent
+            persona={persona}
+            shareHref={shareHref}
+            printHref={printHref}
+          />
+        )}
       </aside>
     </>
+  );
+}
+
+function PanelSkeleton() {
+  return (
+    <div className="px-6 py-6 space-y-8 animate-pulse">
+      <div className="h-8 w-3/4 bg-zinc-800 rounded" />
+      <div className="h-4 w-1/4 bg-zinc-800 rounded" />
+      <div className="space-y-3">
+        <div className="h-4 bg-zinc-800 rounded w-full" />
+        <div className="h-4 bg-zinc-800 rounded w-5/6" />
+      </div>
+      <div className="grid grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <div className="h-3 w-20 bg-zinc-800 rounded" />
+          <div className="h-16 bg-zinc-800 rounded" />
+        </div>
+        <div className="space-y-2">
+          <div className="h-3 w-20 bg-zinc-800 rounded" />
+          <div className="h-16 bg-zinc-800 rounded" />
+        </div>
+      </div>
+    </div>
   );
 }
 
