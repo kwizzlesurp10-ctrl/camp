@@ -5,6 +5,7 @@ import type { Persona } from "@/data/personas";
 import { getClusterById } from "@/data/personas";
 import { PersonaTag } from "@/components/persona/PersonaTag";
 import { serializePersonaForAgents } from "@/lib/persona-export";
+import { useViewTransition } from "@/hooks/useViewTransition";
 
 type PersonaDetailPanelProps = {
   persona: Persona | null;
@@ -19,6 +20,14 @@ export function PersonaDetailPanel({
   shareHref,
   printHref,
 }: PersonaDetailPanelProps): React.ReactElement | null {
+  const { startViewTransition } = useViewTransition();
+
+  const handleClose = () => {
+    startViewTransition(() => {
+      onClose();
+    });
+  };
+
   if (!persona) return null;
 
   const cluster = getClusterById(persona.clusterId);
@@ -29,13 +38,15 @@ export function PersonaDetailPanel({
         type="button"
         aria-label="Close persona details"
         className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 will-change-[opacity]"
-        onClick={onClose}
+        onClick={handleClose}
+        style={{ viewTransitionName: 'persona-backdrop' }}
       />
       <aside
         role="dialog"
         aria-modal="true"
         aria-labelledby="persona-detail-title"
         className="fixed right-0 top-0 z-50 h-full w-full max-w-lg bg-zinc-950 border-l border-zinc-800 shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-300 will-change-[transform]"
+        style={{ viewTransitionName: 'persona-panel' }}
       >
         <div className="sticky top-0 z-10 flex items-center justify-between gap-4 px-6 py-4 bg-zinc-950/90 backdrop-blur border-b border-zinc-800">
           <p className="text-xs uppercase tracking-[2px] text-emerald-400 font-mono">
@@ -43,7 +54,7 @@ export function PersonaDetailPanel({
           </p>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="text-zinc-400 hover:text-zinc-100 text-sm px-3 py-1 rounded-lg border border-zinc-700 hover:border-zinc-500 transition-colors"
           >
             Close
