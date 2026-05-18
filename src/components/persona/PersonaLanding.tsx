@@ -38,6 +38,20 @@ export function PersonaLanding(): React.ReactElement {
     engagement: false,
     domain: false,
   });
+  const [clusterOpenedForSelectedId, setClusterOpenedForSelectedId] = useState<string | null>(null);
+
+  if (selectedId !== clusterOpenedForSelectedId) {
+    setClusterOpenedForSelectedId(selectedId);
+    if (selectedId) {
+      const persona = getPersonaById(selectedId);
+      if (persona) {
+        setOpenClusters((prev) => {
+          if (prev[persona.clusterId]) return prev;
+          return { ...prev, [persona.clusterId]: true };
+        });
+      }
+    }
+  }
 
   const filtered = useMemo(() => filterPersonas(PERSONAS, filter), [filter]);
   const traits = useMemo(() => getAllTraits(), []);
@@ -54,13 +68,6 @@ export function PersonaLanding(): React.ReactElement {
         .filter((p): p is Persona => Boolean(p)),
     [compareIds],
   );
-
-  const openClustersForView = useMemo(() => {
-    if (!selectedId) return openClusters;
-    const persona = getPersonaById(selectedId);
-    if (!persona) return openClusters;
-    return { ...openClusters, [persona.clusterId]: true };
-  }, [openClusters, selectedId]);
 
   useEffect(() => {
     if (!selectedId) return;
@@ -207,7 +214,7 @@ export function PersonaLanding(): React.ReactElement {
             if (clusterPersonas.length === 0 && filter.clusterId !== cluster.id) {
               return null;
             }
-            const isOpen = openClustersForView[cluster.id];
+            const isOpen = openClusters[cluster.id];
             return (
               <details
                 key={cluster.id}
