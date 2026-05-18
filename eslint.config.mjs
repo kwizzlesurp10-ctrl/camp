@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Unrelated nested copy — not part of the camp app
+    "UsersKeithllm-daily-task-log/**",
+    ".venv/**",
   ]),
 ]);
 

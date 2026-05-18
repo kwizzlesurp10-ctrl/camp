@@ -55,12 +55,15 @@ export function PersonaLanding(): React.ReactElement {
     [compareIds],
   );
 
+  const openClustersForView = useMemo(() => {
+    if (!selectedId) return openClusters;
+    const persona = getPersonaById(selectedId);
+    if (!persona) return openClusters;
+    return { ...openClusters, [persona.clusterId]: true };
+  }, [openClusters, selectedId]);
+
   useEffect(() => {
     if (!selectedId) return;
-    const persona = getPersonaById(selectedId);
-    if (persona) {
-      setOpenClusters((prev) => ({ ...prev, [persona.clusterId]: true }));
-    }
     document
       .querySelector(`[data-persona-id="${selectedId}"]`)
       ?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -204,7 +207,7 @@ export function PersonaLanding(): React.ReactElement {
             if (clusterPersonas.length === 0 && filter.clusterId !== cluster.id) {
               return null;
             }
-            const isOpen = openClusters[cluster.id];
+            const isOpen = openClustersForView[cluster.id];
             return (
               <details
                 key={cluster.id}

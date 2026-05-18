@@ -1,8 +1,10 @@
-# CLAUDE.md
+# Agent instructions
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+<!-- BEGIN:nextjs-agent-rules -->
+## This is NOT the Next.js you know
 
-@AGENTS.md
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
+<!-- END:nextjs-agent-rules -->
 
 ## Commands
 
@@ -16,6 +18,7 @@ npm run test:watch # vitest in watch mode
 ```
 
 Run a single test file:
+
 ```bash
 npx vitest run src/lib/persona-filters.test.ts
 ```
@@ -41,6 +44,7 @@ This is a **camp counsellor persona explorer** built with the Next.js 16 App Rou
 **Data layer** (`src/data/personas.ts`): Static in-memory dataset — 12 `Persona` objects organised into 4 `PersonaCluster` groups (`experience`, `motivation`, `engagement`, `domain`). No database or API calls; all data is imported at build time.
 
 **Business logic** (`src/lib/`):
+
 - `persona-filters.ts` — filter/search logic (`filterPersonas`, `parseFilterState` with Zod validation, `getAllTraits`, `countByCluster`). The `Result<T,E>` type from `result.ts` is used for validated input parsing.
 - `persona-export.ts` — serialises a `Persona` to a flat `AgentPersonaExport` shape for clipboard copy (used when integrating persona data with AI agents).
 - `accent-styles.ts` — maps accent colour names (strings stored on tag objects) to Tailwind class strings.
@@ -48,6 +52,7 @@ This is a **camp counsellor persona explorer** built with the Next.js 16 App Rou
 **UI** (`src/components/persona/`): All components are Client Components (`"use client"`). State lives entirely in `PersonaLanding`, which owns filter state, selected persona, and the compare list (max 3). Child components receive callbacks — nothing is co-located.
 
 **State flow in `PersonaLanding`**:
+
 1. `filter` (query + clusterId + trait) → `filterPersonas` → `filtered` list
 2. `selectedId` → opens `PersonaDetailPanel` (slide-in drawer)
 3. `compareIds` → populates `PersonaCompareBar` (fixed bottom bar)
