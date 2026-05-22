@@ -1,10 +1,22 @@
-import { streamText } from 'ai'
+import { streamText, generateImage } from 'ai'
 
-const result = streamText({
+// Text generation example
+const textResult = streamText({
   model: 'openai/gpt-5.5',
   prompt: 'Explain quantum computing in simple terms.',
 })
 
-for await (const chunk of result.textStream) {
+console.log('--- Text Generation ---')
+for await (const chunk of textResult.textStream) {
   process.stdout.write(chunk)
 }
+console.log('\n')
+
+// Image generation example
+console.log('--- Image Generation ---')
+const imageResult = await generateImage({
+  model: 'xai/grok-imagine-image',
+  prompt: 'A photorealistic image of the Transamerica Pyramid in San Francisco at golden hour'
+})
+
+console.log('Generated image URL:', imageResult.image.url)
