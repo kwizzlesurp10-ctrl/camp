@@ -25,22 +25,12 @@ export function PersonaDetailPanel({
   const panelRef = useRef<HTMLDivElement>(null);
   const previouslyFocusedElement = useRef<HTMLElement | null>(null);
 
-  // Simple loading state simulation (can be replaced with real async data later)
-  const [isContentReady, setIsContentReady] = useState(false);
-
-  // Store the element that had focus before the panel opened
   useEffect(() => {
     if (persona) {
       previouslyFocusedElement.current = document.activeElement as HTMLElement | null;
-      setIsContentReady(false);
-
-      // Simulate content loading (remove this when real data fetching exists)
-      const timer = setTimeout(() => setIsContentReady(true), 80);
-      return () => clearTimeout(timer);
     }
   }, [persona]);
 
-  // Focus management
   useEffect(() => {
     if (!persona) {
       if (previouslyFocusedElement.current) {
@@ -48,11 +38,9 @@ export function PersonaDetailPanel({
       }
       return;
     }
-
     const focusable = panelRef.current?.querySelector<HTMLElement>(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
-
     setTimeout(() => {
       if (focusable) {
         focusable.focus();
@@ -97,44 +85,60 @@ export function PersonaDetailPanel({
           <button
             type="button"
             onClick={handleClose}
-            className="text-zinc-400 hover:text-zinc-100 text-sm px-3 py-1 rounded-lg border border-zinc-700 hover:border-zinc-500 transition-colors"
+            aria-label="Close panel"
+            className="text-zinc-400 hover:text-zinc-100 text-sm px-3 py-1.5 rounded-lg border border-zinc-700 hover:border-zinc-500 transition-colors"
           >
-            Close
+            ✕ Close
           </button>
         </div>
 
-        {!isContentReady ? (
-          <PanelSkeleton />
-        ) : (
-          <DetailContent
-            persona={persona}
-            shareHref={shareHref}
-            printHref={printHref}
-          />
-        )}
+        <DetailContent
+          key={persona.id}
+          persona={persona}
+          shareHref={shareHref}
+          printHref={printHref}
+        />
       </aside>
     </>
   );
 }
 
-function PanelSkeleton() {
+function PanelSkeleton(): React.ReactElement {
   return (
     <div className="px-6 py-6 space-y-8 animate-pulse">
-      <div className="h-8 w-3/4 bg-zinc-800 rounded" />
-      <div className="h-4 w-1/4 bg-zinc-800 rounded" />
       <div className="space-y-3">
+        <div className="h-9 w-3/4 bg-zinc-800 rounded-lg" />
+        <div className="h-3.5 w-24 bg-zinc-800 rounded" />
+        <div className="flex gap-2">
+          <div className="h-5 w-20 bg-zinc-800 rounded-full" />
+          <div className="h-5 w-16 bg-zinc-800 rounded-full" />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <div className="h-3 w-16 bg-zinc-800 rounded" />
         <div className="h-4 bg-zinc-800 rounded w-full" />
         <div className="h-4 bg-zinc-800 rounded w-5/6" />
+        <div className="h-4 bg-zinc-800 rounded w-4/5" />
       </div>
       <div className="grid grid-cols-2 gap-6">
         <div className="space-y-2">
           <div className="h-3 w-20 bg-zinc-800 rounded" />
-          <div className="h-16 bg-zinc-800 rounded" />
+          <div className="h-4 bg-zinc-800 rounded" />
+          <div className="h-4 bg-zinc-800 rounded w-4/5" />
+          <div className="h-4 bg-zinc-800 rounded w-3/5" />
         </div>
         <div className="space-y-2">
           <div className="h-3 w-20 bg-zinc-800 rounded" />
           <div className="h-16 bg-zinc-800 rounded" />
         </div>
+      </div>
+      <div className="space-y-2">
+        <div className="h-3 w-32 bg-zinc-800 rounded" />
+        <div className="h-12 bg-zinc-800 rounded" />
+      </div>
+      <div className="space-y-2 pt-4">
+        <div className="h-11 bg-zinc-800 rounded-2xl" />
+        <div className="h-11 bg-zinc-800 rounded-2xl" />
       </div>
     </div>
   );
@@ -149,13 +153,30 @@ function DetailContent({
   shareHref?: string;
   printHref?: string;
 }): React.ReactElement {
+  const [isReady, setIsReady] = useState(false);
+  const [copied, setCopied] = useState<"json" | "link" | null>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsReady(true), 80);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!isReady) return <PanelSkeleton />;
+
+  function flash(which: "json" | "link"): void {
+    setCopied(which);
+    setTimeout(() => setCopied(null), 2000);
+  }
+
   async function copyAgentJson(): Promise<void> {
     await navigator.clipboard.writeText(serializePersonaForAgents(persona));
+    flash("json");
   }
 
   async function copyShareLink(): Promise<void> {
     if (!shareHref) return;
     await navigator.clipboard.writeText(shareHref);
+    flash("link");
   }
 
   return (
@@ -173,16 +194,21 @@ function DetailContent({
       </header>
 
       <DetailBlock label="Essence" body={persona.essence} />
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <DetailBlock label="Motivations">
-          <ul className="text-zinc-400 space-y-2 text-sm">
+          <ul className="space-y-2 mt-1">
             {persona.motivations.map((item) => (
-              <li key={item}>• {item}</li>
+              <li key={item} className="flex items-start gap-2 text-sm text-zinc-400">
+                <span className="mt-0.5 text-emerald-500 shrink-0">›</span>
+                <span>{item}</span>
+              </li>
             ))}
-        </ul>
+          </ul>
         </DetailBlock>
         <DetailBlock label="Pain Points" body={persona.painPoints} />
       </div>
+
       <DetailBlock label="Teen Communication" body={persona.teenCommunication} />
 
       <div>
@@ -191,7 +217,7 @@ function DetailContent({
           {persona.traits.map((trait) => (
             <span
               key={trait}
-              className="px-3 py-1 text-xs bg-zinc-800 rounded-full text-zinc-300"
+              className="px-3 py-1 text-xs bg-zinc-800 border border-zinc-700 rounded-full text-zinc-300 font-medium"
             >
               {trait}
             </span>
@@ -199,23 +225,37 @@ function DetailContent({
         </div>
       </div>
 
-      <div className="grid gap-2">
+      <div className="grid gap-2 pt-2 border-t border-zinc-800">
         <button
           type="button"
           onClick={() => void copyAgentJson()}
-          className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-sm transition-colors"
+          disabled={copied === "json"}
+          className={[
+            "w-full py-3 rounded-2xl font-medium text-sm transition-all duration-200",
+            copied === "json"
+              ? "bg-emerald-700/80 text-emerald-200 cursor-default"
+              : "bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white",
+          ].join(" ")}
         >
-          Copy agent JSON
+          {copied === "json" ? "Copied ✓" : "Copy agent JSON"}
         </button>
+
         {shareHref && (
           <button
             type="button"
             onClick={() => void copyShareLink()}
-            className="w-full py-3 rounded-2xl border border-zinc-700 text-zinc-200 font-medium text-sm hover:border-zinc-500 transition-colors"
+            disabled={copied === "link"}
+            className={[
+              "w-full py-3 rounded-2xl border font-medium text-sm transition-all duration-200",
+              copied === "link"
+                ? "border-emerald-500/40 text-emerald-300 bg-emerald-500/5 cursor-default"
+                : "border-zinc-700 text-zinc-200 hover:border-zinc-500 active:scale-[0.98]",
+            ].join(" ")}
           >
-            Copy deep link
+            {copied === "link" ? "Link copied ✓" : "Copy deep link"}
           </button>
         )}
+
         {printHref && (
           <Link
             href={printHref}
@@ -224,11 +264,12 @@ function DetailContent({
             Open printable training sheet
           </Link>
         )}
+
         <a
           href={`/api/personas/${persona.id}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="block w-full py-3 rounded-2xl border border-zinc-800 text-center text-zinc-400 font-mono text-xs hover:text-zinc-200 transition-colors"
+          className="block w-full py-2.5 rounded-2xl border border-zinc-800 text-center text-zinc-500 font-mono text-xs hover:text-zinc-300 hover:border-zinc-700 transition-colors"
         >
           GET /api/personas/{persona.id}
         </a>

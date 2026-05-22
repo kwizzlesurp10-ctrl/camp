@@ -243,9 +243,19 @@ export function PersonaLanding(): React.ReactElement {
                 <div className="px-6 sm:px-8 pb-8 pt-2">
                   <p className="text-sm text-zinc-500 mb-6">{cluster.description}</p>
                   {clusterPersonas.length === 0 ? (
-                    <p className="text-zinc-500 text-sm py-8 text-center">
-                      No personas match your filters in this cluster.
-                    </p>
+                    <div className="py-12 flex flex-col items-center gap-3 text-center">
+                      <div className="w-10 h-10 rounded-2xl bg-zinc-800 flex items-center justify-center text-xl" aria-hidden>
+                        🔍
+                      </div>
+                      <p className="text-zinc-500 text-sm">No archetypes match your filters in this cluster.</p>
+                      <button
+                        type="button"
+                        onClick={() => setFilter(INITIAL_FILTER)}
+                        className="text-xs text-emerald-400 hover:text-emerald-300 underline underline-offset-4 transition-colors"
+                      >
+                        Clear all filters
+                      </button>
+                    </div>
                   ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                       {clusterPersonas.map((persona) => (

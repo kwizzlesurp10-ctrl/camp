@@ -1,4 +1,6 @@
-# Agent instructions
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 <!-- BEGIN:nextjs-agent-rules -->
 ## This is NOT the Next.js you know
@@ -47,7 +49,10 @@ This is a **camp counsellor persona explorer** built with the Next.js 16 App Rou
 
 - `persona-filters.ts` — filter/search logic (`filterPersonas`, `parseFilterState` with Zod validation, `getAllTraits`, `countByCluster`). The `Result<T,E>` type from `result.ts` is used for validated input parsing.
 - `persona-export.ts` — serialises a `Persona` to a flat `AgentPersonaExport` shape for clipboard copy (used when integrating persona data with AI agents).
-- `accent-styles.ts` — maps accent colour names (strings stored on tag objects) to Tailwind class strings.
+- `persona-api.ts` — API validation (`parsePersonasListQuery`) and response builders (`buildPersonasListResponse`, `buildPersonaDetailResponse`, `getPersonaForApi`). All API routes delegate to this module.
+- `persona-url.ts` — `?persona=<id>` deep link helpers (validated with Zod).
+- `accent-styles.ts` — maps accent colour names (strings stored on tag objects) to Tailwind class strings via `tagAccentClass()`.
+- `result.ts` — minimal `Result<T, E>` type with `ok()` / `err()` constructors.
 
 **UI** (`src/components/persona/`): All components are Client Components (`"use client"`). State lives entirely in `PersonaLanding`, which owns filter state, selected persona, and the compare list (max 3). Child components receive callbacks — nothing is co-located.
 
@@ -57,8 +62,18 @@ This is a **camp counsellor persona explorer** built with the Next.js 16 App Rou
 2. `selectedId` → opens `PersonaDetailPanel` (slide-in drawer)
 3. `compareIds` → populates `PersonaCompareBar` (fixed bottom bar)
 
-**Path alias**: `@/` resolves to `src/` (configured in both `tsconfig.json` and `vitest.config.ts`).
+**HTTP API** (`src/app/api/personas/`): Read-only routes cached for one hour. `GET /api/personas` (optional `?cluster=` filter) and `GET /api/personas/[id]`. Responses use the `AgentPersonaExport` shape with `version`, `generatedAt`, and persona fields. Returns `400` on bad query params and `404` with `{ error, code: "NOT_FOUND" }` on unknown ids.
+
+**Animation system** (`lib/animations.ts`, `hooks/useViewTransition.ts`): Centralised View Transitions API wrapper. Use `useViewTransition` and `TRANSITION_NAMES` from `@/lib/animations` — not the hook file directly. All transitions respect `prefers-reduced-motion`. See `docs/animations.md` for usage and the named transitions (`persona-card`, `persona-panel`, `persona-backdrop`).
+
+**Path alias**: `@/` resolves to `src/` (configured in both `tsconfig.json` and `vitest.config.ts`). Note that `lib/animations.ts` and `hooks/useViewTransition.ts` sit at the project root (not under `src/`) and are not covered by this alias.
 
 **Styling**: Tailwind CSS v4, dark-only palette (`zinc-950` backgrounds). Tag colours are driven by the `accent` string on each tag and resolved via `tagAccentClass()`.
 
 **Testing**: Vitest with `environment: "node"`. Tests live next to the code they test (`*.test.ts`). Only pure logic in `src/lib/` is tested — no component tests exist yet.
+
+## Troubleshooting
+
+**Wrong Turbopack root / multiple lockfiles** — If a `package-lock.json` exists in a parent folder, Next may warn about the workspace root. Remove stray parent lockfiles or rely on `turbopack.root` in `next.config.ts`.
+
+**Lockfile permission denied (WSL)** — Avoid running `npm run dev` as root on `/mnt/c/…`. Use a normal user, delete `.next`, or run from Windows / a native Linux path.

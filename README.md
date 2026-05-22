@@ -7,7 +7,7 @@ Built with [Next.js 16](https://nextjs.org) (App Router, Turbopack), React 19, a
 ## Features
 
 | Area | What you can do |
-|------|-----------------|
+| --- | --- |
 | **Explore** | Search by text; filter by cluster (`experience`, `motivation`, `engagement`, `domain`) or trait |
 | **Detail** | Open a slide-in panel with essence, motivations, pain points, teen communication style, and traits |
 | **Compare** | Pin up to **3** personas in a fixed bottom bar for side-by-side review |
@@ -33,7 +33,7 @@ Open [http://localhost:3000](http://localhost:3000).
 ### Scripts
 
 | Command | Description |
-|---------|-------------|
+| --- | --- |
 | `npm run dev` | Dev server (Turbopack) |
 | `npm run build` | Production build |
 | `npm run start` | Serve production build |
