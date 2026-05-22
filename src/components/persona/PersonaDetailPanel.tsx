@@ -7,6 +7,7 @@ import { getClusterById } from "@/data/personas";
 import { PersonaTag } from "@/components/persona/PersonaTag";
 import { serializePersonaForAgents } from "@/lib/persona-export";
 import { useViewTransition, TRANSITION_NAMES } from "@/lib/animations";
+import { PersonaImageGenerator } from "@/components/persona/PersonaImageGenerator";
 
 type PersonaDetailPanelProps = {
   persona: Persona | null;
@@ -171,6 +172,8 @@ function DetailContent({
           ))}
         </div>
       </header>
+
+      <PersonaImageGenerator personaId={persona.id} personaTitle={persona.title} />
 
       <DetailBlock label="Essence" body={persona.essence} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
