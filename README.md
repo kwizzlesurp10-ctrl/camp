@@ -40,6 +40,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm run lint` | ESLint |
 | `npm run test` | Vitest (once) |
 | `npm run test:watch` | Vitest watch mode |
+| `npm run ai:gateway:demo` | AI Gateway smoke test (requires `vc env pull .env.local`) |
 
 Run a single test file:
 

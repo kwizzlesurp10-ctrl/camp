@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "deployments": "tsx scripts/deployments.ts"
+    "deployments": "tsx scripts/deployments.ts",
+    "ai:gateway:demo": "node --env-file=.env.local scripts/ai-gateway-demo.mjs"
   },
   "dependencies": {
     "@vercel/sdk": "^1.21.5",
