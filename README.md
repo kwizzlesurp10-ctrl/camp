@@ -15,6 +15,7 @@ Built with [Next.js 16](https://nextjs.org) (App Router, Turbopack), React 19, a
 | **Export** | **Copy agent JSON** — flat `AgentPersonaExport` shape for LLM / multi-agent prompts |
 | **Training** | Printable guide at `/training/print` (all personas or `?persona=<id>` for one); browser print / PDF |
 | **API** | Read-only JSON routes for integrations and agents |
+| **MCP** | Streamable HTTP connector at `/api/mcp` to list, search, and **chat with camp staff** personas |
 
 ## Prerequisites
 
@@ -94,6 +95,75 @@ GET /api/personas/wide-eyed-rookie
 
 `404` with `{ "error": "…", "code": "NOT_FOUND" }` if the id is unknown. `400` on invalid list query params.
 
+## MCP connector (chat with camp staff)
+
+The app hosts a **remote MCP server** (Streamable HTTP) so agents can talk to counsellor personas.
+
+| | |
+|--|--|
+| **Endpoint** | `https://camp-swart.vercel.app/api/mcp` (or `http://localhost:3000/api/mcp`) |
+| **Transport** | Streamable HTTP (MCP 2025 + 2026-era clients) |
+
+### Tools
+
+| Tool | Purpose |
+|------|---------|
+| `list_camp_staff` | List staff personas (optional cluster filter) |
+| `list_staff_ids` | Quick id + title lookup |
+| `get_camp_staff` | Full agent-export card for one persona |
+| `search_camp_staff` | Free-text / cluster / trait search |
+| `chat_with_camp_staff` | In-character chat packet (system prompt + draft reply) |
+
+### Connect from Grok
+
+**Production** (after a successful deploy):
+
+```toml
+[mcp_servers.camp]
+url = "https://camp-swart.vercel.app/api/mcp"
+enabled = true
+```
+
+**Local** (while `npm run dev` / `npm run start` is up):
+
+```toml
+[mcp_servers.camp]
+url = "http://127.0.0.1:3000/api/mcp"
+enabled = true
+```
+
+Or CLI:
+
+```bash
+grok mcp add --transport http camp https://camp-swart.vercel.app/api/mcp
+```
+
+> **Deploy note:** Vercel may mark CLI deploys as `BLOCKED` (spending / deployment protection). If `/api/mcp` 404s on production, push a git commit or approve the deployment in the Vercel dashboard, then flip the Grok URL back to production.
+
+### Connect from Cursor / Claude
+
+```json
+{
+  "mcpServers": {
+    "camp": {
+      "url": "https://camp-swart.vercel.app/api/mcp"
+    }
+  }
+}
+```
+
+stdio-only clients can use [mcp-remote](https://www.npmjs.com/package/mcp-remote):
+
+```bash
+npx -y mcp-remote https://camp-swart.vercel.app/api/mcp
+```
+
+### Example agent flow
+
+1. `search_camp_staff` with `query: "homesick"` or `list_camp_staff`
+2. `chat_with_camp_staff` with `staff_id`, `message`, optional `scenario`
+3. Reply to the user in character using the returned system prompt / draft
+
 ## Project structure
 
 ```
@@ -101,6 +171,7 @@ src/
 ├── app/
 │   ├── page.tsx              # Home (Suspense + PersonaLanding)
 │   ├── layout.tsx            # Geist fonts, metadata
+│   ├── api/mcp/              # MCP Streamable HTTP connector
 │   ├── api/personas/         # List + detail API routes
 │   └── training/print/       # Printable training guide
 ├── components/
@@ -109,6 +180,8 @@ src/
 ├── data/personas.ts          # 12 personas, 4 clusters (static)
 ├── hooks/use-persona-deep-link.ts
 └── lib/
+    ├── camp-staff-chat.ts    # System prompts + draft replies
+    ├── camp-staff-mcp.ts     # MCP tool service layer
     ├── persona-filters.ts    # Search / cluster / trait filtering
     ├── persona-export.ts     # Agent JSON serialization
     ├── persona-api.ts        # API validation + response builders
