@@ -5,7 +5,11 @@ import { useEffect, useState, useTransition } from "react";
 import { askStaffRoom } from "@/app/actions/staff-room";
 import { CampSwarmFallback } from "@/components/persona/CampSwarmFallback";
 import { PERSONA_CLUSTERS } from "@/data/personas";
-import { buildCampSwarm } from "@/lib/camp-swarm";
+import { buildCampSwarm, type Vec3 } from "@/lib/camp-swarm";
+import {
+  upsertOrbPlacement,
+  type OrbPlacements,
+} from "@/lib/camp-swarm-placement";
 import { formatDirectedBeat, type TalkBeat } from "@/lib/camp-swarm-talk";
 
 const CampSwarmCanvas = dynamic(
@@ -18,6 +22,7 @@ const CampSwarmCanvas = dynamic(
         onSelectPersona={() => undefined}
         activeTalk={null}
         showStatus={false}
+        placements={{}}
       />
     ),
   },
@@ -47,8 +52,16 @@ export function CampSwarm({
   const [beats, setBeats] = useState<TalkBeat[]>([]);
   const [beatIndex, setBeatIndex] = useState(0);
   const [askError, setAskError] = useState<string | null>(null);
+  const [placements, setPlacements] = useState<OrbPlacements>({});
   const [isPending, startTransition] = useTransition();
   const isStage = layout === "stage";
+
+  const onPlaceOrb = (personaId: string, position: Vec3): void => {
+    setPlacements((current) => {
+      const next = upsertOrbPlacement(current, personaId, position);
+      return next.ok ? next.value : current;
+    });
+  };
 
   const activeTalk = beatIndex < beats.length ? (beats[beatIndex] ?? null) : null;
 
@@ -80,6 +93,8 @@ export function CampSwarm({
       onSelectPersona={onSelectPersona}
       activeTalk={activeTalk}
       showStatus={!isStage}
+      placements={placements}
+      onPlaceOrb={onPlaceOrb}
     />
   );
 
@@ -206,7 +221,8 @@ export function CampSwarm({
             Twelve counsellors, one cyan spectrum
           </h1>
           <p className="mt-1 text-sm text-cyan-100/60">
-            Each orb is a camp agent. Pulses travel in the direction of the reply.
+            Drag any orb to rearrange the staff room. Pulses still travel in the
+            direction of the reply.
           </p>
         </header>
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-[#000d1a] via-[#000d1a]/80 to-transparent px-4 pb-4 pt-16 sm:px-6">
@@ -238,7 +254,7 @@ export function CampSwarm({
           </p>
         </div>
         <p className="text-xs text-cyan-300/70">
-          Drag to orbit · click an orb to open the persona
+          Drag orbs to rearrange · click one to open the persona
         </p>
       </header>
       <div className="relative h-[28rem] sm:h-[32rem]">{canvas}</div>

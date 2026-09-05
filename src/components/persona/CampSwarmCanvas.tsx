@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { CampSwarmFallback } from "@/components/persona/CampSwarmFallback";
 import * as THREE from "three";
+import { DragControls } from "three/addons/controls/DragControls.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { CSS2DObject, CSS2DRenderer } from "three/addons/renderers/CSS2DRenderer.js";
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
@@ -19,10 +20,17 @@ import {
   type SwarmOrb,
   type Vec3,
 } from "@/lib/camp-swarm";
+import { ok, type Result } from "@/lib/result";
+import {
+  clampWorld,
+  resolveOrbWorld,
+  type OrbPlacements,
+} from "@/lib/camp-swarm-placement";
 import {
   DIRECTOR_ORIGIN,
   DIRECTOR_SPEAKER_ID,
   formatDirectedBeat,
+  isDirectorSpeaker,
   pairMatchesDirected,
   resolveSpeakerPosition,
   type TalkBeat,
@@ -33,6 +41,8 @@ type CampSwarmCanvasProps = {
   onSelectPersona: (id: string) => void;
   activeTalk: TalkBeat | null;
   showStatus?: boolean;
+  placements?: OrbPlacements;
+  onPlaceOrb?: (personaId: string, position: Vec3) => void;
 };
 
 type TendrilBranch = {
@@ -62,6 +72,8 @@ export function CampSwarmCanvas({
   onSelectPersona,
   activeTalk,
   showStatus = true,
+  placements = {},
+  onPlaceOrb,
 }: CampSwarmCanvasProps): React.ReactElement {
   const hostRef = useRef<HTMLDivElement>(null);
   const fallbackRef = useRef<HTMLDivElement>(null);
@@ -69,12 +81,16 @@ export function CampSwarmCanvas({
   const selectedIdRef = useRef(selectedId);
   const onSelectRef = useRef(onSelectPersona);
   const activeTalkRef = useRef(activeTalk);
+  const placementsRef = useRef(placements);
+  const onPlaceOrbRef = useRef(onPlaceOrb);
 
   useEffect(() => {
     selectedIdRef.current = selectedId;
     onSelectRef.current = onSelectPersona;
     activeTalkRef.current = activeTalk;
-  }, [activeTalk, onSelectPersona, selectedId]);
+    placementsRef.current = placements;
+    onPlaceOrbRef.current = onPlaceOrb;
+  }, [activeTalk, onPlaceOrb, onSelectPersona, placements, selectedId]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -131,6 +147,8 @@ export function CampSwarmCanvas({
 
     for (const orb of swarm.orbs) {
       const mesh = createOrbMesh(orb);
+      const world = resolveOrbWorld(orb, placementsRef.current);
+      mesh.position.set(world.x, world.y, world.z);
       nodeGroup.add(mesh);
       orbById.set(orb.personaId, mesh);
 
@@ -175,8 +193,8 @@ export function CampSwarmCanvas({
     const linkObjects = swarm.links.map((link) => {
       const from = requireOrb(swarm.orbs, link.fromId);
       const to = requireOrb(swarm.orbs, link.toId);
-      const start = new THREE.Vector3(from.position.x, from.position.y, from.position.z);
-      const end = new THREE.Vector3(to.position.x, to.position.y, to.position.z);
+      const start = liveMeshPosition(orbById.get(from.personaId), from.position);
+      const end = liveMeshPosition(orbById.get(to.personaId), to.position);
       const mid = start.clone().lerp(end, 0.5);
       mid.y += link.kind === "staff-room" ? 10 : 4;
       const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
@@ -229,7 +247,7 @@ export function CampSwarmCanvas({
 
     let lastTalkKey = "";
     const burstForTalk = (talk: TalkBeat): void => {
-      const fromPos = resolveSpeakerPosition(talk.fromId, swarm.orbs);
+      const fromPos = liveSpeakerPosition(talk.fromId, orbById, swarm.orbs);
       if (!fromPos.ok) return;
       const color = toneForSpeaker(talk.fromId, swarm.orbs);
       const origin = vec3From(fromPos.value);
@@ -238,7 +256,65 @@ export function CampSwarmCanvas({
       activeTendrils.push(emitter);
     };
 
+    let orbWasDragged = false;
+    const dragControls = new DragControls([...orbById.values()], camera, renderer.domElement);
+    dragControls.recursive = false;
+
+    const clampDraggedMesh = (object: THREE.Object3D): Vec3 => {
+      const clamped = clampWorld({
+        x: object.position.x,
+        y: object.position.y,
+        z: object.position.z,
+      });
+      object.position.set(clamped.x, clamped.y, clamped.z);
+      const light = object.userData.light;
+      if (light instanceof THREE.PointLight) {
+        light.position.copy(object.position);
+      }
+      return clamped;
+    };
+
+    const syncLinks = (): void => {
+      linkObjects.forEach((item) => {
+        const start = liveMeshPosition(orbById.get(item.from.personaId), item.from.position);
+        const end = liveMeshPosition(orbById.get(item.to.personaId), item.to.position);
+        const mid = start.clone().lerp(end, 0.5);
+        mid.y += item.link.kind === "staff-room" ? 10 : 4;
+        item.curve = new THREE.QuadraticBezierCurve3(start, mid, end);
+        item.line.geometry.dispose();
+        item.line.geometry = new THREE.BufferGeometry().setFromPoints(item.curve.getPoints(32));
+      });
+    };
+
+    dragControls.addEventListener("dragstart", (event) => {
+      controls.enabled = false;
+      const start = event.object.position.clone();
+      event.object.userData.dragOrigin = start;
+      orbWasDragged = false;
+    });
+    dragControls.addEventListener("drag", (event) => {
+      clampDraggedMesh(event.object);
+      const origin = event.object.userData.dragOrigin;
+      if (origin instanceof THREE.Vector3 && event.object.position.distanceTo(origin) > 1.4) {
+        orbWasDragged = true;
+      }
+      syncLinks();
+    });
+    dragControls.addEventListener("dragend", (event) => {
+      controls.enabled = true;
+      const clamped = clampDraggedMesh(event.object);
+      const parsed = parseSwarmOrbId(event.object.userData.personaId);
+      if (parsed.ok && orbWasDragged) {
+        onPlaceOrbRef.current?.(parsed.value, clamped);
+      }
+      syncLinks();
+    });
+
     const onClick = (event: MouseEvent): void => {
+      if (orbWasDragged) {
+        orbWasDragged = false;
+        return;
+      }
       const bounds = renderer.domElement.getBoundingClientRect();
       mouse.x = ((event.clientX - bounds.left) / bounds.width) * 2 - 1;
       mouse.y = -((event.clientY - bounds.top) / bounds.height) * 2 + 1;
@@ -328,6 +404,7 @@ export function CampSwarmCanvas({
         }
         const light = node.userData.light;
         if (light instanceof THREE.PointLight) {
+          light.position.copy(node.position);
           light.intensity = (selected || speaking ? 18 : 10) + pulse * 14;
         }
       });
@@ -338,7 +415,7 @@ export function CampSwarmCanvas({
       dock.mesh.scale.setScalar(dockPulse);
       dock.light.intensity = talkingIds.has(DIRECTOR_SPEAKER_ID) ? 22 : 8;
 
-      updateDirectedLink(directed, directedTalk, swarm.orbs, clock);
+      updateDirectedLink(directed, directedTalk, swarm.orbs, clock, orbById);
 
       linkObjects.forEach((item, index) => {
         const talking =
@@ -395,6 +472,7 @@ export function CampSwarmCanvas({
       cancelAnimationFrame(frame);
       observer.disconnect();
       renderer.domElement.removeEventListener("click", onClick);
+      dragControls.dispose();
       activeTendrils.forEach((emitter) => emitter.dispose(scene));
       disposeDirectedLink(scene, directed);
       scene.remove(dock.mesh, dock.light);
@@ -433,6 +511,8 @@ export function CampSwarmCanvas({
           onSelectPersona={onSelectPersona}
           activeTalk={activeTalk}
           showStatus={showStatus}
+          placements={placements}
+          onPlaceOrb={onPlaceOrb}
         />
       </div>
       <div ref={hostRef} className="pointer-events-none absolute inset-0 z-10" />
@@ -446,7 +526,7 @@ export function CampSwarmCanvas({
             : "sr-only"
         }
       >
-        Click any glowing counsellor for a tendril burst
+        Drag orbs to rearrange · click one to open the persona
       </p>
     </div>
   );
@@ -625,6 +705,26 @@ function vec3From(position: Vec3): THREE.Vector3 {
   return new THREE.Vector3(position.x, position.y, position.z);
 }
 
+function liveMeshPosition(mesh: THREE.Mesh | undefined, fallback: Vec3): THREE.Vector3 {
+  if (mesh) return mesh.position.clone();
+  return vec3From(fallback);
+}
+
+function liveSpeakerPosition(
+  speakerId: string,
+  orbById: Map<string, THREE.Mesh>,
+  orbs: SwarmOrb[],
+): Result<Vec3, string> {
+  if (isDirectorSpeaker(speakerId) || speakerId === DIRECTOR_SPEAKER_ID) {
+    return resolveSpeakerPosition(speakerId, orbs);
+  }
+  const mesh = orbById.get(speakerId);
+  if (mesh) {
+    return ok({ x: mesh.position.x, y: mesh.position.y, z: mesh.position.z });
+  }
+  return resolveSpeakerPosition(speakerId, orbs);
+}
+
 function toneForSpeaker(speakerId: string, orbs: SwarmOrb[]): number {
   if (speakerId === DIRECTOR_SPEAKER_ID) return 0x9ef6ff;
   const orb = findOrb(orbs, speakerId);
@@ -695,13 +795,14 @@ function updateDirectedLink(
   talk: TalkBeat | null,
   orbs: SwarmOrb[],
   clock: number,
+  orbById: Map<string, THREE.Mesh>,
 ): void {
   const show = talk !== null;
   setDirectedOpacity(directed, show ? 0.95 : 0);
   if (!talk) return;
 
-  const from = resolveSpeakerPosition(talk.fromId, orbs);
-  const to = resolveSpeakerPosition(talk.toId, orbs);
+  const from = liveSpeakerPosition(talk.fromId, orbById, orbs);
+  const to = liveSpeakerPosition(talk.toId, orbById, orbs);
   if (!from.ok || !to.ok) {
     setDirectedOpacity(directed, 0);
     return;

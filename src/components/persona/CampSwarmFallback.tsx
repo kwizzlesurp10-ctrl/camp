@@ -1,12 +1,21 @@
 "use client";
 
+import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { PERSONAS } from "@/data/personas";
 import {
   buildCampSwarm,
   findOrb,
   projectSwarmToPlane,
   type SwarmLink,
+  type SwarmOrb,
+  type Vec3,
 } from "@/lib/camp-swarm";
+import {
+  dragDidMove,
+  placeOrbFromPlane,
+  resolveOrbPlane,
+  type OrbPlacements,
+} from "@/lib/camp-swarm-placement";
 import {
   DIRECTOR_ORIGIN,
   DIRECTOR_SPEAKER_ID,
@@ -21,6 +30,15 @@ type CampSwarmFallbackProps = {
   onSelectPersona: (id: string) => void;
   activeTalk: TalkBeat | null;
   showStatus?: boolean;
+  placements?: OrbPlacements;
+  onPlaceOrb?: (personaId: string, position: Vec3) => void;
+};
+
+type DragSession = {
+  personaId: string;
+  startClientX: number;
+  startClientY: number;
+  moved: boolean;
 };
 
 export function CampSwarmFallback({
@@ -28,23 +46,65 @@ export function CampSwarmFallback({
   onSelectPersona,
   activeTalk,
   showStatus = true,
+  placements = {},
+  onPlaceOrb,
 }: CampSwarmFallbackProps): React.ReactElement {
   const swarm = buildCampSwarm(PERSONAS);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const placementsRef = useRef(placements);
+  const onPlaceOrbRef = useRef(onPlaceOrb);
+  const dragRef = useRef<DragSession | null>(null);
+  const skipClickRef = useRef(false);
+  const [drag, setDrag] = useState<DragSession | null>(null);
+
+  useEffect(() => {
+    placementsRef.current = placements;
+    onPlaceOrbRef.current = onPlaceOrb;
+  }, [onPlaceOrb, placements]);
+
   const dock = projectSwarmToPlane(DIRECTOR_ORIGIN);
   const status = activeTalk
     ? formatDirectedBeat(activeTalk, swarm.orbs)
-    : "Click any glowing counsellor — WebGL preview fell back to the lake map";
+    : "Drag orbs to rearrange · click one to open the persona";
+
+  const moveOrb = (personaId: string, clientX: number, clientY: number): void => {
+    const stage = stageRef.current;
+    const place = onPlaceOrbRef.current;
+    const orb = swarm.orbs.find((item) => item.personaId === personaId);
+    if (!stage || !orb || !place) return;
+    const bounds = stage.getBoundingClientRect();
+    if (bounds.width === 0 || bounds.height === 0) return;
+    const plane = {
+      x: ((clientX - bounds.left) / bounds.width) * 100,
+      y: ((clientY - bounds.top) / bounds.height) * 100,
+    };
+    place(personaId, placeOrbFromPlane(orb, plane, placementsRef.current));
+  };
+
+  const endDrag = (event: PointerEvent<HTMLButtonElement>): void => {
+    const session = dragRef.current;
+    if (!session || session.personaId !== event.currentTarget.dataset.personaId) return;
+    if (session.moved) {
+      skipClickRef.current = true;
+      moveOrb(session.personaId, event.clientX, event.clientY);
+    }
+    dragRef.current = null;
+    setDrag(null);
+  };
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-[#000d1a]">
+    <div
+      ref={stageRef}
+      className="relative h-full w-full touch-none overflow-hidden bg-[#000d1a] select-none"
+    >
       <svg
-        className="absolute inset-0 h-full w-full"
+        className="pointer-events-none absolute inset-0 h-full w-full"
         viewBox="0 0 100 100"
         preserveAspectRatio="none"
         aria-hidden
       >
         {swarm.links.map((link) => {
-          const line = linkPoints(link, swarm.orbs);
+          const line = linkPoints(link, swarm.orbs, placements);
           if (!line) return null;
           const active =
             activeTalk !== null &&
@@ -63,12 +123,13 @@ export function CampSwarmFallback({
             />
           );
         })}
-        {activeTalk ? <DirectedPulse talk={activeTalk} orbs={swarm.orbs} /> : null}
+        {activeTalk ? (
+          <DirectedPulse talk={activeTalk} orbs={swarm.orbs} placements={placements} />
+        ) : null}
       </svg>
 
-      <button
-        type="button"
-        className="absolute z-10 -translate-x-1/2 -translate-y-1/2 text-center"
+      <div
+        className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2 text-center"
         style={{ left: `${dock.x}%`, top: `${dock.y}%` }}
         aria-label="You, the director"
       >
@@ -76,10 +137,10 @@ export function CampSwarmFallback({
         <span className="mt-1 block text-[10px] font-semibold tracking-[0.16em] text-cyan-100 uppercase">
           You
         </span>
-      </button>
+      </div>
 
       {swarm.orbs.map((orb) => {
-        const point = projectSwarmToPlane(orb.position);
+        const point = resolveOrbPlane(orb, placements);
         const selected = selectedId === orb.personaId;
         const speaking =
           activeTalk !== null &&
@@ -88,9 +149,50 @@ export function CampSwarmFallback({
           <button
             key={orb.personaId}
             type="button"
-            onClick={() => onSelectPersona(orb.personaId)}
-            className="absolute z-10 -translate-x-1/2 -translate-y-1/2 text-center"
+            data-persona-id={orb.personaId}
+            aria-label={`Drag ${orb.title} to rearrange, or click to open`}
+            aria-grabbed={drag?.personaId === orb.personaId}
+            className={[
+              "absolute -translate-x-1/2 -translate-y-1/2 cursor-grab touch-none text-center active:cursor-grabbing",
+              drag?.personaId === orb.personaId ? "z-20" : "z-10",
+            ].join(" ")}
             style={{ left: `${point.x}%`, top: `${point.y}%` }}
+            onPointerDown={(event) => {
+              if (!onPlaceOrbRef.current) return;
+              event.preventDefault();
+              event.currentTarget.setPointerCapture(event.pointerId);
+              const session = {
+                personaId: orb.personaId,
+                startClientX: event.clientX,
+                startClientY: event.clientY,
+                moved: false,
+              };
+              dragRef.current = session;
+              setDrag(session);
+            }}
+            onPointerMove={(event) => {
+              const session = dragRef.current;
+              if (!session || session.personaId !== orb.personaId) return;
+              if (
+                !session.moved &&
+                dragDidMove(session.startClientX, session.startClientY, event.clientX, event.clientY)
+              ) {
+                session.moved = true;
+                setDrag({ ...session });
+              }
+              if (session.moved) {
+                moveOrb(orb.personaId, event.clientX, event.clientY);
+              }
+            }}
+            onPointerUp={endDrag}
+            onPointerCancel={endDrag}
+            onClick={() => {
+              if (skipClickRef.current) {
+                skipClickRef.current = false;
+                return;
+              }
+              onSelectPersona(orb.personaId);
+            }}
           >
             <span
               className="mx-auto block rounded-full"
@@ -127,12 +229,14 @@ export function CampSwarmFallback({
 function DirectedPulse({
   talk,
   orbs,
+  placements,
 }: {
   talk: TalkBeat;
-  orbs: ReturnType<typeof buildCampSwarm>["orbs"];
+  orbs: SwarmOrb[];
+  placements: OrbPlacements;
 }): React.ReactElement | null {
-  const from = speakerPoint(talk.fromId, orbs);
-  const to = speakerPoint(talk.toId, orbs);
+  const from = speakerPoint(talk.fromId, orbs, placements);
+  const to = speakerPoint(talk.toId, orbs, placements);
   if (!from || !to) return null;
   return (
     <line
@@ -151,24 +255,26 @@ function DirectedPulse({
 
 function speakerPoint(
   speakerId: string,
-  orbs: ReturnType<typeof buildCampSwarm>["orbs"],
+  orbs: SwarmOrb[],
+  placements: OrbPlacements,
 ): { x: number; y: number } | null {
   if (isDirectorSpeaker(speakerId) || speakerId === DIRECTOR_SPEAKER_ID) {
     return projectSwarmToPlane(DIRECTOR_ORIGIN);
   }
   const orb = findOrb(orbs, speakerId);
   if (!orb.ok) return null;
-  return projectSwarmToPlane(orb.value.position);
+  return resolveOrbPlane(orb.value, placements);
 }
 
 function linkPoints(
   link: SwarmLink,
-  orbs: ReturnType<typeof buildCampSwarm>["orbs"],
+  orbs: SwarmOrb[],
+  placements: OrbPlacements,
 ): { x1: number; y1: number; x2: number; y2: number } | null {
   const from = findOrb(orbs, link.fromId);
   const to = findOrb(orbs, link.toId);
   if (!from.ok || !to.ok) return null;
-  const a = projectSwarmToPlane(from.value.position);
-  const b = projectSwarmToPlane(to.value.position);
+  const a = resolveOrbPlane(from.value, placements);
+  const b = resolveOrbPlane(to.value, placements);
   return { x1: a.x, y1: a.y, x2: b.x, y2: b.y };
 }
