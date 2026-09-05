@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   PERSONA_CLUSTERS,
   PERSONAS,
-  getPersonaById,
   type Persona,
   type PersonaClusterId,
 } from "@/data/personas";
@@ -33,26 +32,14 @@ export function PersonaLanding(): React.ReactElement {
     usePersonaDeepLink();
   const [filter, setFilter] = useState<PersonaFilterState>(INITIAL_FILTER);
   const [compareIds, setCompareIds] = useState<string[]>([]);
-  const [openClusters, setOpenClusters] = useState<Record<PersonaClusterId, boolean>>({
+  const [userOpenClusters, setUserOpenClusters] = useState<
+    Record<PersonaClusterId, boolean>
+  >({
     experience: true,
     motivation: false,
     engagement: false,
     domain: false,
   });
-  const [clusterOpenedForSelectedId, setClusterOpenedForSelectedId] = useState<string | null>(null);
-
-  if (selectedId !== clusterOpenedForSelectedId) {
-    setClusterOpenedForSelectedId(selectedId);
-    if (selectedId) {
-      const persona = getPersonaById(selectedId);
-      if (persona) {
-        setOpenClusters((prev) => {
-          if (prev[persona.clusterId]) return prev;
-          return { ...prev, [persona.clusterId]: true };
-        });
-      }
-    }
-  }
 
   const filtered = useMemo(() => filterPersonas(PERSONAS, filter), [filter]);
   const traits = useMemo(() => getAllTraits(), []);
@@ -61,6 +48,11 @@ export function PersonaLanding(): React.ReactElement {
     () => PERSONAS.find((p) => p.id === selectedId) ?? null,
     [selectedId],
   );
+
+  const openClusters: Record<PersonaClusterId, boolean> = {
+    ...userOpenClusters,
+    ...(selectedPersona ? { [selectedPersona.clusterId]: true } : {}),
+  };
 
   const comparePersonas = useMemo(
     () =>
@@ -86,7 +78,7 @@ export function PersonaLanding(): React.ReactElement {
   }, []);
 
   const scrollToCluster = useCallback((clusterId: PersonaClusterId) => {
-    setOpenClusters((prev) => ({ ...prev, [clusterId]: true }));
+    setUserOpenClusters((prev) => ({ ...prev, [clusterId]: true }));
     setFilter((prev) => ({ ...prev, clusterId }));
     document.getElementById(`cluster-${clusterId}`)?.scrollIntoView({
       behavior: "smooth",
@@ -236,7 +228,7 @@ export function PersonaLanding(): React.ReactElement {
                   className="px-6 sm:px-8 py-5 bg-zinc-900 flex items-center justify-between cursor-pointer hover:bg-zinc-800 transition-colors text-lg sm:text-xl font-semibold list-none [&::-webkit-details-marker]:hidden"
                   onClick={(event) => {
                     event.preventDefault();
-                    setOpenClusters((prev) => ({
+                    setUserOpenClusters((prev) => ({
                       ...prev,
                       [cluster.id]: !prev[cluster.id],
                     }));
