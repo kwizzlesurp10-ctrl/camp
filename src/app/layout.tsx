@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Northern Camp Staff Personas",
+  title: "Bio-Swarm · Northern Camp Staff",
   description:
-    "Interactive archetype map for northern teenage summer camp staff — training, simulations, and multi-agent orchestration.",
+    "Bioluminescent staff-room of twelve camp counsellor agents. Ask the dock and watch live pulses travel in the reply direction.",
 };
 
 export const viewport: Viewport = {

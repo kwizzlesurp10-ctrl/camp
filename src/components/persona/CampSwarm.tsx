@@ -26,11 +26,13 @@ const SUGGESTED_QUESTIONS = [
 type CampSwarmProps = {
   selectedId: string | null;
   onSelectPersona: (id: string) => void;
+  layout?: "card" | "stage";
 };
 
 export function CampSwarm({
   selectedId,
   onSelectPersona,
+  layout = "card",
 }: CampSwarmProps): React.ReactElement {
   const swarm = buildCampSwarm();
   const [question, setQuestion] = useState("");
@@ -66,7 +68,11 @@ export function CampSwarm({
   return (
     <section
       aria-label="Camp agent constellation"
-      className="mb-10 overflow-hidden rounded-3xl border border-cyan-500/20 bg-[#000d1a]"
+      className={
+        layout === "stage"
+          ? "flex h-dvh w-full flex-col overflow-hidden bg-[#000d1a]"
+          : "mb-10 overflow-hidden rounded-3xl border border-cyan-500/20 bg-[#000d1a]"
+      }
     >
       <header className="flex flex-col gap-2 border-b border-cyan-500/15 px-5 py-4 sm:flex-row sm:items-end sm:justify-between sm:px-6">
         <div>
@@ -86,7 +92,13 @@ export function CampSwarm({
         </p>
       </header>
 
-      <div className="relative h-[28rem] sm:h-[32rem]">
+      <div
+        className={
+          layout === "stage"
+            ? "relative min-h-0 flex-1"
+            : "relative h-[28rem] sm:h-[32rem]"
+        }
+      >
         <CampSwarmCanvas
           selectedId={selectedId}
           onSelectPersona={onSelectPersona}
