@@ -16,11 +16,21 @@ import {
   talkingPairAt,
   type SwarmLink,
   type SwarmOrb,
+  type Vec3,
 } from "@/lib/camp-swarm";
+import {
+  DIRECTOR_ORIGIN,
+  DIRECTOR_SPEAKER_ID,
+  formatDirectedBeat,
+  pairMatchesDirected,
+  resolveSpeakerPosition,
+  type TalkBeat,
+} from "@/lib/camp-swarm-talk";
 
 type CampSwarmCanvasProps = {
   selectedId: string | null;
   onSelectPersona: (id: string) => void;
+  activeTalk: TalkBeat | null;
 };
 
 type TendrilBranch = {
@@ -48,16 +58,19 @@ const TALK_INTERVAL_SEC = 4;
 export function CampSwarmCanvas({
   selectedId,
   onSelectPersona,
+  activeTalk,
 }: CampSwarmCanvasProps): React.ReactElement {
   const hostRef = useRef<HTMLDivElement>(null);
   const statusRef = useRef<HTMLParagraphElement>(null);
   const selectedIdRef = useRef(selectedId);
   const onSelectRef = useRef(onSelectPersona);
+  const activeTalkRef = useRef(activeTalk);
 
   useEffect(() => {
     selectedIdRef.current = selectedId;
     onSelectRef.current = onSelectPersona;
-  }, [onSelectPersona, selectedId]);
+    activeTalkRef.current = activeTalk;
+  }, [activeTalk, onSelectPersona, selectedId]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -130,6 +143,24 @@ export function CampSwarmCanvas({
       mesh.add(labelObject);
     }
 
+    const dock = createDockMarker();
+    scene.add(dock.mesh, dock.light);
+    const dockLabel = document.createElement("div");
+    dockLabel.className = "camp-swarm-label";
+    dockLabel.textContent = "You";
+    dockLabel.style.color = "#9ef6ff";
+    dockLabel.style.fontSize = "11px";
+    dockLabel.style.letterSpacing = "0.12em";
+    dockLabel.style.fontWeight = "700";
+    dockLabel.style.textTransform = "uppercase";
+    dockLabel.style.textShadow = "0 0 12px rgba(0, 20, 40, 0.9)";
+    const dockLabelObject = new CSS2DObject(dockLabel);
+    dockLabelObject.position.set(0, 8, 0);
+    dock.mesh.add(dockLabelObject);
+
+    const directed = createDirectedLink();
+    scene.add(directed.line, directed.pulse, directed.arrow);
+
     const linkObjects = swarm.links.map((link) => {
       const from = requireOrb(swarm.orbs, link.fromId);
       const to = requireOrb(swarm.orbs, link.toId);
@@ -175,6 +206,7 @@ export function CampSwarmCanvas({
     };
 
     const announceTalk = (tick: number): void => {
+      if (activeTalkRef.current) return;
       const pair = talkingPairAt(tick, swarm.links);
       if (!pair.ok) return;
       const from = findOrb(swarm.orbs, pair.value.fromId);
@@ -183,6 +215,17 @@ export function CampSwarmCanvas({
       setStatus(formatTalkBeat(from.value, to.value));
     };
     announceTalk(0);
+
+    let lastTalkKey = "";
+    const burstForTalk = (talk: TalkBeat): void => {
+      const fromPos = resolveSpeakerPosition(talk.fromId, swarm.orbs);
+      if (!fromPos.ok) return;
+      const color = toneForSpeaker(talk.fromId, swarm.orbs);
+      const origin = vec3From(fromPos.value);
+      const emitter = createTendrilEmitter(origin, color, scene);
+      emitter.rings = createPhaseRings(origin, color, scene);
+      activeTendrils.push(emitter);
+    };
 
     const onClick = (event: MouseEvent): void => {
       const bounds = renderer.domElement.getBoundingClientRect();
@@ -226,35 +269,81 @@ export function CampSwarmCanvas({
       talkAge += 0.016;
       controls.update();
 
-      if (talkAge >= TALK_INTERVAL_SEC) {
+      if (!activeTalkRef.current && talkAge >= TALK_INTERVAL_SEC) {
         talkAge = 0;
         talkTick += 1;
         announceTalk(talkTick);
       }
 
-      const activeTalk = talkingPairAt(talkTick, swarm.links);
+      const ambientTalk = talkingPairAt(talkTick, swarm.links);
+      const liveTalk = activeTalkRef.current;
+      const directedTalk: TalkBeat | null = liveTalk
+        ? liveTalk
+        : ambientTalk.ok
+          ? {
+              fromId: ambientTalk.value.fromId,
+              toId: ambientTalk.value.toId,
+              kind: "staff-handoff",
+              text: "",
+            }
+          : null;
+
+      if (liveTalk) {
+        const talkKey = `${liveTalk.fromId}->${liveTalk.toId}:${liveTalk.kind}:${liveTalk.text}`;
+        if (talkKey !== lastTalkKey) {
+          lastTalkKey = talkKey;
+          burstForTalk(liveTalk);
+          setStatus(formatDirectedBeat(liveTalk, swarm.orbs));
+        }
+      } else {
+        lastTalkKey = "";
+      }
+
+      const talkingIds = new Set(
+        directedTalk ? [directedTalk.fromId, directedTalk.toId] : [],
+      );
 
       nodeGroup.children.forEach((node) => {
         if (!(node instanceof THREE.Mesh)) return;
-        const selected = selectedIdRef.current === node.userData.personaId;
+        const personaId = String(node.userData.personaId ?? "");
+        const selected = selectedIdRef.current === personaId;
+        const speaking = talkingIds.has(personaId);
         const pulse = 0.6 + 0.4 * Math.sin(clock * 1.9 + Number(node.userData.phase ?? 0));
-        const scaleBoost = selected ? 0.18 : 0;
+        const scaleBoost = (selected ? 0.18 : 0) + (speaking ? 0.16 : 0);
         node.scale.setScalar(1 + pulse * (reduceMotion ? 0.08 : 0.28) + scaleBoost);
         if (node.material instanceof THREE.MeshStandardMaterial) {
-          node.material.emissiveIntensity = (selected ? 2.2 : 1.4) + pulse * 1.4;
+          node.material.emissiveIntensity =
+            (selected || speaking ? 2.4 : 1.4) + pulse * 1.4;
         }
         const light = node.userData.light;
         if (light instanceof THREE.PointLight) {
-          light.intensity = (selected ? 16 : 10) + pulse * 14;
+          light.intensity = (selected || speaking ? 18 : 10) + pulse * 14;
         }
       });
 
+      const dockPulse = talkingIds.has(DIRECTOR_SPEAKER_ID)
+        ? 1.35 + Math.sin(clock * 6) * 0.2
+        : 1;
+      dock.mesh.scale.setScalar(dockPulse);
+      dock.light.intensity = talkingIds.has(DIRECTOR_SPEAKER_ID) ? 22 : 8;
+
+      updateDirectedLink(directed, directedTalk, swarm.orbs, clock);
+
       linkObjects.forEach((item, index) => {
         const talking =
-          activeTalk.ok &&
-          pairMatches(activeTalk.value, item.link.fromId, item.link.toId);
+          directedTalk !== null &&
+          pairMatchesDirected(
+            directedTalk.fromId,
+            directedTalk.toId,
+            item.link.fromId,
+            item.link.toId,
+          );
         const travel = (clock * 0.18 + index * 0.13) % 1;
-        const point = item.curve.getPoint(talking ? (clock * 0.35) % 1 : travel);
+        const directedT =
+          talking && directedTalk
+            ? travelToward(item.link, directedTalk, clock)
+            : travel;
+        const point = item.curve.getPoint(directedT);
         item.pulse.position.copy(point);
         item.pulse.scale.setScalar(talking ? 1.6 : 1);
         if (item.line.material instanceof THREE.LineBasicMaterial) {
@@ -296,6 +385,10 @@ export function CampSwarmCanvas({
       observer.disconnect();
       renderer.domElement.removeEventListener("click", onClick);
       activeTendrils.forEach((emitter) => emitter.dispose(scene));
+      disposeDirectedLink(scene, directed);
+      scene.remove(dock.mesh, dock.light);
+      dock.mesh.geometry.dispose();
+      if (dock.mesh.material instanceof THREE.Material) dock.mesh.material.dispose();
       linkObjects.forEach((item) => {
         scene.remove(item.line, item.pulse);
         item.line.geometry.dispose();
@@ -472,16 +565,138 @@ function createPhaseRings(
   return rings;
 }
 
-function pairMatches(link: SwarmLink, a: string, b: string): boolean {
-  return (
-    (link.fromId === a && link.toId === b) || (link.fromId === b && link.toId === a)
-  );
-}
-
 function requireOrb(orbs: SwarmOrb[], id: string): SwarmOrb {
   const found = findOrb(orbs, id);
   if (!found.ok) {
     throw new Error(found.error);
   }
   return found.value;
+}
+
+function vec3From(position: Vec3): THREE.Vector3 {
+  return new THREE.Vector3(position.x, position.y, position.z);
+}
+
+function toneForSpeaker(speakerId: string, orbs: SwarmOrb[]): number {
+  if (speakerId === DIRECTOR_SPEAKER_ID) return 0x9ef6ff;
+  const orb = findOrb(orbs, speakerId);
+  return orb.ok ? orb.value.tone.hex : 0x00ffff;
+}
+
+function travelToward(link: SwarmLink, talk: TalkBeat, clock: number): number {
+  const t = (clock * 0.45) % 1;
+  if (talk.fromId === link.toId && talk.toId === link.fromId) return 1 - t;
+  return t;
+}
+
+type DirectedLink = {
+  line: THREE.Line;
+  pulse: THREE.Mesh;
+  arrow: THREE.Mesh;
+};
+
+function createDockMarker(): { mesh: THREE.Mesh; light: THREE.PointLight } {
+  const geometry = new THREE.OctahedronGeometry(4.2, 0);
+  const material = new THREE.MeshStandardMaterial({
+    color: 0x9ef6ff,
+    emissive: 0x2288aa,
+    emissiveIntensity: 2.2,
+    metalness: 0.15,
+    roughness: 0.4,
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.set(DIRECTOR_ORIGIN.x, DIRECTOR_ORIGIN.y, DIRECTOR_ORIGIN.z);
+  const light = new THREE.PointLight(0x9ef6ff, 8, 90);
+  light.position.copy(mesh.position);
+  return { mesh, light };
+}
+
+function createDirectedLink(): DirectedLink {
+  const line = new THREE.Line(
+    new THREE.BufferGeometry(),
+    new THREE.LineBasicMaterial({
+      color: 0x9ef6ff,
+      transparent: true,
+      opacity: 0,
+      blending: THREE.AdditiveBlending,
+    }),
+  );
+  const pulse = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(1.6, 0),
+    new THREE.MeshBasicMaterial({
+      color: 0x9ef6ff,
+      transparent: true,
+      opacity: 0,
+      blending: THREE.AdditiveBlending,
+    }),
+  );
+  const arrow = new THREE.Mesh(
+    new THREE.ConeGeometry(1.4, 3.4, 8),
+    new THREE.MeshBasicMaterial({
+      color: 0xccffff,
+      transparent: true,
+      opacity: 0,
+      blending: THREE.AdditiveBlending,
+    }),
+  );
+  return { line, pulse, arrow };
+}
+
+function updateDirectedLink(
+  directed: DirectedLink,
+  talk: TalkBeat | null,
+  orbs: SwarmOrb[],
+  clock: number,
+): void {
+  const show = talk !== null;
+  setDirectedOpacity(directed, show ? 0.95 : 0);
+  if (!talk) return;
+
+  const from = resolveSpeakerPosition(talk.fromId, orbs);
+  const to = resolveSpeakerPosition(talk.toId, orbs);
+  if (!from.ok || !to.ok) {
+    setDirectedOpacity(directed, 0);
+    return;
+  }
+
+  const start = vec3From(from.value);
+  const end = vec3From(to.value);
+  const mid = start.clone().lerp(end, 0.5);
+  mid.y += 16;
+  const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
+  directed.line.geometry.dispose();
+  directed.line.geometry = new THREE.BufferGeometry().setFromPoints(curve.getPoints(40));
+  if (directed.line.material instanceof THREE.LineBasicMaterial) {
+    directed.line.material.color.setHex(toneForSpeaker(talk.fromId, orbs));
+  }
+
+  const t = (clock * 0.55) % 1;
+  const point = curve.getPoint(t);
+  const ahead = curve.getPoint(Math.min(1, t + 0.08));
+  directed.pulse.position.copy(point);
+  directed.arrow.position.copy(ahead);
+  directed.arrow.lookAt(curve.getPoint(Math.min(1, t + 0.16)));
+  directed.arrow.rotateX(Math.PI / 2);
+}
+
+function setDirectedOpacity(directed: DirectedLink, opacity: number): void {
+  if (directed.line.material instanceof THREE.LineBasicMaterial) {
+    directed.line.material.opacity = opacity;
+  }
+  if (directed.pulse.material instanceof THREE.MeshBasicMaterial) {
+    directed.pulse.material.opacity = opacity;
+  }
+  if (directed.arrow.material instanceof THREE.MeshBasicMaterial) {
+    directed.arrow.material.opacity = opacity;
+  }
+}
+
+function disposeDirectedLink(scene: THREE.Scene, directed: DirectedLink): void {
+  scene.remove(directed.line, directed.pulse, directed.arrow);
+  directed.line.geometry.dispose();
+  directed.pulse.geometry.dispose();
+  directed.arrow.geometry.dispose();
+  if (directed.line.material instanceof THREE.Material) directed.line.material.dispose();
+  if (directed.pulse.material instanceof THREE.Material) directed.pulse.material.dispose();
+  if (directed.arrow.material instanceof THREE.Material) directed.arrow.material.dispose();
 }
