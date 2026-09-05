@@ -39,15 +39,18 @@ npx vitest run src/lib/persona-filters.test.ts
 
 This is a **camp counsellor persona explorer** built with the Next.js 16 App Router.
 
+**Home (`/`)** is the bio-swarm staff room (`CampSwarmApp`). **`/personas`** is the archive explorer (`PersonaLanding`).
+
 **Data layer** (`src/data/personas.ts`): Static in-memory dataset — 12 `Persona` objects organised into 4 `PersonaCluster` groups (`experience`, `motivation`, `engagement`, `domain`). No database or API calls; all data is imported at build time.
 
 **Business logic** (`src/lib/`):
 
 - `persona-filters.ts` — filter/search logic (`filterPersonas`, `parseFilterState` with Zod validation, `getAllTraits`, `countByCluster`). The `Result<T,E>` type from `result.ts` is used for validated input parsing.
-- `persona-export.ts` — serialises a `Persona` to a flat `AgentPersonaExport` shape for clipboard copy (used when integrating persona data with AI agents).
-- `accent-styles.ts` — maps accent colour names (strings stored on tag objects) to Tailwind class strings.
+- `persona-export.ts` — serialises a `Persona` to a flat `AgentPersonaExport` shape for clipboard copy.
+- `camp-swarm.ts` / `camp-swarm-talk.ts` / `camp-swarm-placement.ts` — staff-room orbs, directed pulses, drag placement.
+- `persona-api.ts` / `persona-url.ts` / `accent-styles.ts` / `result.ts` / `route-secret.ts`.
 
-**UI** (`src/components/persona/`): All components are Client Components (`"use client"`). State lives entirely in `PersonaLanding`, which owns filter state, selected persona, and the compare list (max 3). Child components receive callbacks — nothing is co-located.
+**UI** (`src/components/persona/`): Client Components. Swarm state lives in `CampSwarm` (placements, ask beats). Archive state lives in `PersonaLanding` (filter, selected persona, compare max 3).
 
 **State flow in `PersonaLanding`**:
 
@@ -59,4 +62,4 @@ This is a **camp counsellor persona explorer** built with the Next.js 16 App Rou
 
 **Styling**: Tailwind CSS v4, dark-only palette (`zinc-950` backgrounds). Tag colours are driven by the `accent` string on each tag and resolved via `tagAccentClass()`.
 
-**Testing**: Vitest with `environment: "node"`. Tests live next to the code they test (`*.test.ts`). Only pure logic in `src/lib/` is tested — no component tests exist yet.
+**Testing**: Vitest with `environment: "node"`. Tests live next to the code they test (`*.test.ts`). Lib + roster invariants are covered; component tests are still sparse.

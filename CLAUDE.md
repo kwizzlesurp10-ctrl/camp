@@ -51,10 +51,17 @@ This is a **camp counsellor persona explorer** built with the Next.js 16 App Rou
 - `persona-export.ts` — serialises a `Persona` to a flat `AgentPersonaExport` shape for clipboard copy (used when integrating persona data with AI agents).
 - `persona-api.ts` — API validation (`parsePersonasListQuery`) and response builders (`buildPersonasListResponse`, `buildPersonaDetailResponse`, `getPersonaForApi`). All API routes delegate to this module.
 - `persona-url.ts` — `?persona=<id>` deep link helpers (validated with Zod).
+- `camp-swarm.ts` — orb layout, cyan tones, cluster + staff-room links.
+- `camp-swarm-talk.ts` — directed ask/reply/handoff beats for the staff room.
+- `camp-swarm-placement.ts` — drag/drop plane ↔ world placement.
+- `route-secret.ts` — Bearer gates for `/api/deployments` and optional MCP auth.
 - `accent-styles.ts` — maps accent colour names (strings stored on tag objects) to Tailwind class strings via `tagAccentClass()`.
 - `result.ts` — minimal `Result<T, E>` type with `ok()` / `err()` constructors.
 
-**UI** (`src/components/persona/`): All components are Client Components (`"use client"`). State lives entirely in `PersonaLanding`, which owns filter state, selected persona, and the compare list (max 3). Child components receive callbacks — nothing is co-located.
+**UI** (`src/components/persona/`): Interactive surfaces are Client Components (`"use client"`).
+
+- `/` — `CampSwarmApp` owns the full-viewport staff-room swarm, ask form, and detail drawer.
+- `/personas` — `PersonaLanding` owns filter state, selected persona, and the compare list (max 3). Child components receive callbacks.
 
 **State flow in `PersonaLanding`**:
 
@@ -64,13 +71,17 @@ This is a **camp counsellor persona explorer** built with the Next.js 16 App Rou
 
 **HTTP API** (`src/app/api/personas/`): Read-only routes cached for one hour. `GET /api/personas` (optional `?cluster=` filter) and `GET /api/personas/[id]`. Responses use the `AgentPersonaExport` shape with `version`, `generatedAt`, and persona fields. Returns `400` on bad query params and `404` with `{ error, code: "NOT_FOUND" }` on unknown ids.
 
-**Animation system** (`lib/animations.ts`, `hooks/useViewTransition.ts`): Centralised View Transitions API wrapper. Use `useViewTransition` and `TRANSITION_NAMES` from `@/lib/animations` — not the hook file directly. All transitions respect `prefers-reduced-motion`. See `docs/animations.md` for usage and the named transitions (`persona-card`, `persona-panel`, `persona-backdrop`).
+**Staff room** (`src/lib/camp-swarm.ts`, `camp-swarm-talk.ts`, `camp-swarm-placement.ts`): Twelve cyan-spectrum orbs, directed talk beats, drag/drop placement. WebGL in `CampSwarmCanvas`; 2D lake in `CampSwarmFallback` when WebGL cannot boot. `askStaffRoom` in `src/app/actions/staff-room.ts` plans reply pulses.
 
-**Path alias**: `@/` resolves to `src/` (configured in both `tsconfig.json` and `vitest.config.ts`). Note that `lib/animations.ts` and `hooks/useViewTransition.ts` sit at the project root (not under `src/`) and are not covered by this alias.
+**MCP** (`src/app/api/mcp/route.ts`): Streamable HTTP tools. Optional `MCP_AUTH_SECRET` bearer. `POST /api/deployments` is operator-only (`DEPLOYMENTS_API_SECRET`).
+
+**Animation system** (`src/lib/animations.ts`, `src/hooks/useViewTransition.ts`): Centralised View Transitions API wrapper. Import `useViewTransition` and `TRANSITION_NAMES` from `@/lib/animations`. All transitions respect `prefers-reduced-motion`. See `docs/animations.md`.
+
+**Path alias**: `@/` resolves to `src/` (configured in both `tsconfig.json` and `vitest.config.ts`).
 
 **Styling**: Tailwind CSS v4, dark-only palette (`zinc-950` backgrounds). Tag colours are driven by the `accent` string on each tag and resolved via `tagAccentClass()`.
 
-**Testing**: Vitest with `environment: "node"`. Tests live next to the code they test (`*.test.ts`). Only pure logic in `src/lib/` is tested — no component tests exist yet.
+**Testing**: Vitest with `environment: "node"`. Tests live next to the code they test (`*.test.ts`). Lib logic is covered; component tests are still sparse.
 
 ## Troubleshooting
 
