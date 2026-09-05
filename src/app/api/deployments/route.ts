@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { authorizeBearerEnv } from "@/lib/route-secret";
 import {
   getVercelClient,
   VERCEL_PROJECT_ID,
@@ -7,8 +8,16 @@ import {
 
 export const dynamic = "force-dynamic";
 
+function denyUnlessOperator(request: NextRequest): NextResponse | null {
+  const gate = authorizeBearerEnv(request.headers, "DEPLOYMENTS_API_SECRET", "not-found");
+  if (gate.ok) return null;
+  return NextResponse.json({ error: gate.error.error }, { status: gate.error.status });
+}
+
 /** GET /api/deployments?limit=10&target=production */
 export async function GET(request: NextRequest): Promise<NextResponse> {
+  const denied = denyUnlessOperator(request);
+  if (denied) return denied;
   try {
     const client = getVercelClient();
     const { searchParams } = request.nextUrl;
@@ -27,7 +36,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 }
 
 /** POST /api/deployments — redeploy the latest production deployment */
-export async function POST(): Promise<NextResponse> {
+export async function POST(request: NextRequest): Promise<NextResponse> {
+  const denied = denyUnlessOperator(request);
+  if (denied) return denied;
   try {
     const client = getVercelClient();
 
