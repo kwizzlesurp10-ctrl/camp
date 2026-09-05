@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useState, useTransition } from "react";
 import { askStaffRoom } from "@/app/actions/staff-room";
+import { CampSwarmFallback } from "@/components/persona/CampSwarmFallback";
 import { PERSONA_CLUSTERS } from "@/data/personas";
 import { buildCampSwarm } from "@/lib/camp-swarm";
 import { formatDirectedBeat, type TalkBeat } from "@/lib/camp-swarm-talk";
@@ -11,7 +12,14 @@ const CampSwarmCanvas = dynamic(
   () => import("./CampSwarmCanvas").then((mod) => mod.CampSwarmCanvas),
   {
     ssr: false,
-    loading: () => <SwarmStageSkeleton />,
+    loading: () => (
+      <CampSwarmFallback
+        selectedId={null}
+        onSelectPersona={() => undefined}
+        activeTalk={null}
+        showStatus={false}
+      />
+    ),
   },
 );
 
@@ -237,13 +245,5 @@ export function CampSwarm({
       {askForm}
       {legend}
     </section>
-  );
-}
-
-function SwarmStageSkeleton(): React.ReactElement {
-  return (
-    <div className="flex h-full items-center justify-center bg-[#000d1a]">
-      <p className="text-sm tracking-wide text-cyan-300/70">Lighting the lake…</p>
-    </div>
   );
 }

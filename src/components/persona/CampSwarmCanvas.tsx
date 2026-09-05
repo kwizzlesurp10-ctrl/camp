@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { CampSwarmFallback } from "@/components/persona/CampSwarmFallback";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { CSS2DObject, CSS2DRenderer } from "three/addons/renderers/CSS2DRenderer.js";
@@ -63,6 +64,7 @@ export function CampSwarmCanvas({
   showStatus = true,
 }: CampSwarmCanvasProps): React.ReactElement {
   const hostRef = useRef<HTMLDivElement>(null);
+  const fallbackRef = useRef<HTMLDivElement>(null);
   const statusRef = useRef<HTMLParagraphElement>(null);
   const selectedIdRef = useRef(selectedId);
   const onSelectRef = useRef(onSelectPersona);
@@ -86,7 +88,14 @@ export function CampSwarmCanvas({
     const camera = new THREE.PerspectiveCamera(62, 1, 0.1, 8000);
     camera.position.set(0, 40, 168);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = createWebGlRenderer();
+    } catch {
+      return undefined;
+    }
+    if (fallbackRef.current) fallbackRef.current.hidden = true;
+    host.style.pointerEvents = "auto";
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setClearColor(0x000d1a, 1);
     host.appendChild(renderer.domElement);
@@ -418,7 +427,15 @@ export function CampSwarmCanvas({
 
   return (
     <div className="relative h-full w-full">
-      <div ref={hostRef} className="absolute inset-0" />
+      <div ref={fallbackRef} className="absolute inset-0 z-0">
+        <CampSwarmFallback
+          selectedId={selectedId}
+          onSelectPersona={onSelectPersona}
+          activeTalk={activeTalk}
+          showStatus={showStatus}
+        />
+      </div>
+      <div ref={hostRef} className="pointer-events-none absolute inset-0 z-10" />
       <p
         ref={statusRef}
         role="status"
@@ -433,6 +450,31 @@ export function CampSwarmCanvas({
       </p>
     </div>
   );
+}
+
+function createWebGlRenderer(): THREE.WebGLRenderer {
+  const canvas = document.createElement("canvas");
+  const context =
+    canvas.getContext("webgl2", {
+      alpha: true,
+      antialias: false,
+      failIfMajorPerformanceCaveat: false,
+    }) ??
+    canvas.getContext("webgl", {
+      alpha: true,
+      antialias: false,
+      failIfMajorPerformanceCaveat: false,
+    });
+  if (!context) {
+    throw new Error("WebGL unavailable");
+  }
+  return new THREE.WebGLRenderer({
+    canvas,
+    antialias: false,
+    alpha: true,
+    failIfMajorPerformanceCaveat: false,
+    powerPreference: "default",
+  });
 }
 
 function createOrbMesh(orb: SwarmOrb): THREE.Mesh {
