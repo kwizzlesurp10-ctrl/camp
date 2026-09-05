@@ -68,7 +68,7 @@ function clampPercent(value: number): number {
 
 export const swarmOrbIdSchema = z.enum(PERSONA_IDS);
 
-const STAFF_ROOM_PAIRS: ReadonlyArray<readonly [string, string]> = [
+export const STAFF_ROOM_PAIRS: ReadonlyArray<readonly [string, string]> = [
   ["seasoned-sentinel", "boundary-guardian"],
   ["northern-lifer", "wilderness-steward"],
   ["impact-driven-mentor", "heart-centered-listener"],
