@@ -31,6 +31,7 @@ type CampSwarmCanvasProps = {
   selectedId: string | null;
   onSelectPersona: (id: string) => void;
   activeTalk: TalkBeat | null;
+  showStatus?: boolean;
 };
 
 type TendrilBranch = {
@@ -59,6 +60,7 @@ export function CampSwarmCanvas({
   selectedId,
   onSelectPersona,
   activeTalk,
+  showStatus = true,
 }: CampSwarmCanvasProps): React.ReactElement {
   const hostRef = useRef<HTMLDivElement>(null);
   const statusRef = useRef<HTMLParagraphElement>(null);
@@ -421,7 +423,11 @@ export function CampSwarmCanvas({
         ref={statusRef}
         role="status"
         aria-live="polite"
-        className="pointer-events-none absolute bottom-3 left-3 z-10 max-w-[min(36rem,calc(100%-1.5rem))] rounded-lg bg-cyan-400/15 px-3.5 py-2 text-xs text-cyan-200"
+        className={
+          showStatus
+            ? "pointer-events-none absolute bottom-3 left-3 z-10 max-w-[min(36rem,calc(100%-1.5rem))] rounded-lg bg-cyan-400/15 px-3.5 py-2 text-xs text-cyan-200"
+            : "sr-only"
+        }
       >
         Click any glowing counsellor for a tendril burst
       </p>

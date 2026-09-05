@@ -128,6 +128,12 @@ export function PersonaLanding(): React.ReactElement {
           </p>
           <nav className="flex flex-wrap gap-3 mb-6" aria-label="Training resources">
             <Link
+              href="/"
+              className="text-sm px-4 py-2 rounded-xl border border-cyan-500/30 text-cyan-200 hover:border-cyan-300/50 hover:text-cyan-50 transition-colors"
+            >
+              Bio-swarm home
+            </Link>
+            <Link
               href="/training/print"
               className="text-sm px-4 py-2 rounded-xl border border-zinc-700 text-zinc-300 hover:border-emerald-500/40 hover:text-emerald-300 transition-colors"
             >

@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#09090b",
+  themeColor: "#000d1a",
 };
 
 export default function RootLayout({
@@ -33,7 +33,7 @@ export default function RootLayout({
       data-scroll-behavior="smooth"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
     >
-      <body className="min-h-full bg-zinc-950 text-zinc-200">{children}</body>
+      <body className="min-h-full bg-[#000d1a] text-zinc-200">{children}</body>
     </html>
   );
 }
