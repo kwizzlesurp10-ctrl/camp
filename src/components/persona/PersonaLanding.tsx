@@ -9,6 +9,7 @@ import {
   type Persona,
   type PersonaClusterId,
 } from "@/data/personas";
+import { CampSwarm } from "@/components/persona/CampSwarm";
 import { PersonaCard } from "@/components/persona/PersonaCard";
 import { PersonaCompareBar } from "@/components/persona/PersonaCompareBar";
 import { PersonaDetailPanel } from "@/components/persona/PersonaDetailPanel";
@@ -122,7 +123,8 @@ export function PersonaLanding(): React.ReactElement {
           </div>
           <p className="max-w-2xl text-base sm:text-lg text-zinc-400 mb-6">
             A living map of the archetypes who keep the fire burning, the canoes upright, and the
-            teenagers seen. Explore, compare staff mixes, and export personas for agent simulations.
+            teenagers seen. The cyan swarm is the staff-room: twelve agents talking. Explore,
+            compare mixes, and export personas for simulations.
           </p>
           <nav className="flex flex-wrap gap-3 mb-6" aria-label="Training resources">
             <Link
@@ -146,6 +148,8 @@ export function PersonaLanding(): React.ReactElement {
             <StatPill label="Visible now" value={String(filtered.length)} accent />
           </div>
         </header>
+
+        <CampSwarm selectedId={selectedId} onSelectPersona={toggleSelectedId} />
 
         <div className="sticky top-0 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-4 mb-8 bg-zinc-950/80 backdrop-blur-xl border-y border-zinc-800/80">
           <div className="flex flex-col gap-4">

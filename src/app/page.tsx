@@ -40,6 +40,14 @@ function LandingFallback(): React.ReactElement {
           </div>
         </div>
 
+        <div className="mb-10 overflow-hidden rounded-3xl border border-cyan-500/20 bg-[#000d1a]">
+          <div className="border-b border-cyan-500/15 px-6 py-4 space-y-2">
+            <SkeletonBox className="h-3 w-40" />
+            <SkeletonBox className="h-5 w-72" />
+          </div>
+          <SkeletonBox className="h-[28rem] w-full rounded-none" />
+        </div>
+
         {/* Filter bar */}
         <div className="space-y-3 mb-8">
           <SkeletonBox className="h-11 w-full rounded-2xl" />
