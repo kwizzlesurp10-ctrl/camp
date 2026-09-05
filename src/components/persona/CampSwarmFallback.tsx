@@ -83,7 +83,7 @@ export function CampSwarmFallback({
 
   const endDrag = (event: PointerEvent<HTMLButtonElement>): void => {
     const session = dragRef.current;
-    if (!session || session.personaId !== event.currentTarget.dataset.personaId) return;
+    if (!session || session.personaId !== event.currentTarget.dataset.swarmOrbId) return;
     if (session.moved) {
       skipClickRef.current = true;
       moveOrb(session.personaId, event.clientX, event.clientY);
@@ -149,7 +149,7 @@ export function CampSwarmFallback({
           <button
             key={orb.personaId}
             type="button"
-            data-persona-id={orb.personaId}
+            data-swarm-orb-id={orb.personaId}
             aria-label={`Drag ${orb.title} to rearrange, or click to open`}
             aria-grabbed={drag?.personaId === orb.personaId}
             className={[

@@ -110,8 +110,6 @@ export function CampSwarmCanvas({
     } catch {
       return undefined;
     }
-    if (fallbackRef.current) fallbackRef.current.hidden = true;
-    host.style.pointerEvents = "auto";
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setClearColor(0x000d1a, 1);
     host.appendChild(renderer.domElement);
@@ -465,6 +463,8 @@ export function CampSwarmCanvas({
       composer.render();
       labelRenderer.render(scene, camera);
     };
+    if (fallbackRef.current) fallbackRef.current.hidden = true;
+    host.style.pointerEvents = "auto";
     animate();
 
     return () => {
