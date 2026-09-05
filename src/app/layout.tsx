@@ -13,13 +13,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Northern Camp Staff Personas",
+  title: "Bio-Swarm · Northern Camp Staff",
   description:
-    "Interactive archetype map for northern teenage summer camp staff — training, simulations, and multi-agent orchestration.",
+    "Bioluminescent staff-room of twelve camp counsellor agents. Ask the dock and watch live pulses travel in the reply direction.",
 };
 
 export const viewport: Viewport = {
-  themeColor: "#09090b",
+  themeColor: "#000d1a",
 };
 
 export default function RootLayout({
@@ -33,7 +33,7 @@ export default function RootLayout({
       data-scroll-behavior="smooth"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
     >
-      <body className="min-h-full bg-zinc-950 text-zinc-200">{children}</body>
+      <body className="min-h-full bg-[#000d1a] text-zinc-200">{children}</body>
     </html>
   );
 }
