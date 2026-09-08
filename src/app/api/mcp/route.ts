@@ -10,6 +10,7 @@ import {
   searchStaff,
   staffIdSchema,
 } from "@/lib/camp-staff-mcp";
+import { authorizeBearerEnv } from "@/lib/route-secret";
 
 /**
  * Northern Camp Staff MCP connector.
@@ -173,4 +174,12 @@ const handler = createMcpHandler(
   },
 );
 
-export { handler as GET, handler as POST };
+async function mcpRoute(request: Request): Promise<Response> {
+  const gate = authorizeBearerEnv(request.headers, "MCP_AUTH_SECRET", "allow");
+  if (!gate.ok) {
+    return Response.json({ error: gate.error.error }, { status: gate.error.status });
+  }
+  return handler(request);
+}
+
+export { mcpRoute as GET, mcpRoute as POST };

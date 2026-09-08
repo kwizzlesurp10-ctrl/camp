@@ -1,3 +1,9 @@
+/**
+ * Optional live probe against production + local MCP.
+ * Not part of `npm test`. Requires Playwright Chromium:
+ *   npx playwright install chromium
+ *   node scripts/playwright-verify-camp.mjs
+ */
 import { chromium } from "playwright";
 
 const LIVE = "https://camp-swart.vercel.app";

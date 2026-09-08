@@ -48,9 +48,27 @@ export type CampSwarm = {
   links: SwarmLink[];
 };
 
+export type PlanePoint = {
+  x: number;
+  y: number;
+};
+
+export function projectSwarmToPlane(position: Vec3): PlanePoint {
+  const x = 50 + position.x * 0.38;
+  const y = 48 - position.z * 0.32 - position.y * 0.12;
+  return {
+    x: clampPercent(x),
+    y: clampPercent(y),
+  };
+}
+
+function clampPercent(value: number): number {
+  return Math.min(92, Math.max(8, value));
+}
+
 export const swarmOrbIdSchema = z.enum(PERSONA_IDS);
 
-const STAFF_ROOM_PAIRS: ReadonlyArray<readonly [string, string]> = [
+export const STAFF_ROOM_PAIRS: ReadonlyArray<readonly [string, string]> = [
   ["seasoned-sentinel", "boundary-guardian"],
   ["northern-lifer", "wilderness-steward"],
   ["impact-driven-mentor", "heart-centered-listener"],

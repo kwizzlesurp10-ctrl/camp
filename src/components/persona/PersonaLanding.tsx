@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   PERSONA_CLUSTERS,
   PERSONAS,
-  getPersonaById,
   type Persona,
   type PersonaClusterId,
 } from "@/data/personas";
@@ -44,7 +43,7 @@ export function PersonaLanding(): React.ReactElement {
   if (selectedId !== clusterOpenedForSelectedId) {
     setClusterOpenedForSelectedId(selectedId);
     if (selectedId) {
-      const persona = getPersonaById(selectedId);
+      const persona = PERSONAS.find((item) => item.id === selectedId);
       if (persona) {
         setOpenClusters((prev) => {
           if (prev[persona.clusterId]) return prev;

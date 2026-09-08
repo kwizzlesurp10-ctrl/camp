@@ -94,7 +94,7 @@ const STOP_WORDS = new Set([
   "teens",
 ]);
 
-const DOMAIN_HINTS: ReadonlyArray<{
+export const DOMAIN_HINTS: ReadonlyArray<{
   tokens: readonly string[];
   personaId: string;
   weight: number;

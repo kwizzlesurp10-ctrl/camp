@@ -51,11 +51,12 @@ npx vitest run src/lib/persona-filters.test.ts
 
 ## Using the app
 
-1. **Home (`/`)** — Personas grouped by cluster. Use the search box and chips to narrow the list.
-2. **Card click** — Opens the detail drawer. URL updates to `/?persona=wide-eyed-rookie` (example).
-3. **Compare** — Toggle **Compare** on cards (max 3). Review the amber bar at the bottom.
-4. **Copy agent JSON** — In the drawer, copies structured JSON for prompts and tools.
-5. **Training guide** — Link from the drawer or go to `/training/print`. Add `?persona=<id>` for a single-archetype handout.
+1. **Home (`/`)** — Full-viewport **bio-swarm staff room**. Twelve counsellor orbs plus a `YOU` dock. Drag orbs to rearrange; click an orb to open the persona drawer. Ask the staff room to send directed reply pulses.
+2. **Archive (`/personas`)** — Clustered cards, search, trait chips, compare (max 3), and an embedded swarm card. Link **Bio-swarm home** returns to `/`.
+3. **Card / orb click** — Opens the detail drawer. URL updates to `/?persona=wide-eyed-rookie` or `/personas?persona=…`.
+4. **Compare** — Toggle **Compare** on archive cards (max 3). Review the amber bar at the bottom.
+5. **Copy agent JSON** — In the drawer, copies structured JSON for prompts and tools.
+6. **Training guide** — Link from the drawer or go to `/training/print`. Add `?persona=<id>` for a single-archetype handout.
 
 ### Persona IDs
 
@@ -103,6 +104,7 @@ The app hosts a **remote MCP server** (Streamable HTTP) so agents can talk to co
 |--|--|
 | **Endpoint** | `https://camp-swart.vercel.app/api/mcp` (or `http://localhost:3000/api/mcp`) |
 | **Transport** | Streamable HTTP (MCP 2025 + 2026-era clients) |
+| **Auth** | None locally. If `MCP_AUTH_SECRET` is set, send `Authorization: Bearer <secret>`. |
 
 ### Tools
 
@@ -169,25 +171,32 @@ npx -y mcp-remote https://camp-swart.vercel.app/api/mcp
 ```
 src/
 ├── app/
-│   ├── page.tsx              # Home (Suspense + PersonaLanding)
+│   ├── page.tsx              # Home (Suspense + CampSwarmApp staff room)
+│   ├── personas/page.tsx     # Archive explorer (PersonaLanding)
 │   ├── layout.tsx            # Geist fonts, metadata
+│   ├── actions/staff-room.ts # Ask-the-staff-room server action
 │   ├── api/mcp/              # MCP Streamable HTTP connector
 │   ├── api/personas/         # List + detail API routes
+│   ├── api/deployments/      # Operator-only Vercel list/redeploy
 │   └── training/print/       # Printable training guide
 ├── components/
-│   ├── persona/              # Landing, cards, drawer, compare bar
+│   ├── persona/              # Swarm, landing, cards, drawer, compare bar
 │   └── training/             # Print layout + controls
 ├── data/personas.ts          # 12 personas, 4 clusters (static)
 ├── hooks/use-persona-deep-link.ts
 └── lib/
-    ├── camp-staff-chat.ts    # System prompts + draft replies
-    ├── camp-staff-mcp.ts     # MCP tool service layer
-    ├── persona-filters.ts    # Search / cluster / trait filtering
-    ├── persona-export.ts     # Agent JSON serialization
-    ├── persona-api.ts        # API validation + response builders
-    ├── persona-url.ts        # ?persona= deep link helpers
-    ├── accent-styles.ts      # Tag colour → Tailwind classes
-    └── result.ts             # Result<T, E> helper
+    ├── camp-swarm.ts             # Orb layout, cyan tones, staff-room links
+    ├── camp-swarm-talk.ts        # Directed ask / reply / handoff beats
+    ├── camp-swarm-placement.ts   # Drag/drop plane ↔ world placement
+    ├── camp-staff-chat.ts        # System prompts + draft replies
+    ├── camp-staff-mcp.ts         # MCP tool service layer
+    ├── persona-filters.ts        # Search / cluster / trait filtering
+    ├── persona-export.ts         # Agent JSON serialization
+    ├── persona-api.ts            # API validation + response builders
+    ├── persona-url.ts            # ?persona= deep link helpers
+    ├── route-secret.ts           # Bearer gates for operator/MCP routes
+    ├── accent-styles.ts          # Tag colour → Tailwind classes
+    └── result.ts                 # Result<T, E> helper
 ```
 
 Path alias: `@/` → `src/`.
@@ -210,7 +219,20 @@ Deeper architecture and Next.js 16 notes: **[AGENTS.md](./AGENTS.md)**.
 
 ## Deploy
 
-Deploy on [Vercel](https://vercel.com/new) or any host that supports Next.js 16. No environment variables are required for the static persona dataset.
+Deploy on [Vercel](https://vercel.com/new) or any host that supports Next.js 16. The static persona dataset needs no environment variables.
+
+Operator routes:
+- `GET`/`POST /api/deployments` stay **404** until `DEPLOYMENTS_API_SECRET` is set. Then send `Authorization: Bearer <secret>`. Also requires `VERCEL_TOKEN` + `VERCEL_PROJECT_ID`.
+- `/api/mcp` stays open locally. Set `MCP_AUTH_SECRET` in production and send the same Bearer header from MCP clients.
+
+Copy `env.example` → `.env.local` for local secrets.
+
+Optional live probe (not part of `npm test`; needs Playwright installed separately):
+
+```bash
+npx playwright install chromium
+node scripts/playwright-verify-camp.mjs
+```
 
 [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying)
 

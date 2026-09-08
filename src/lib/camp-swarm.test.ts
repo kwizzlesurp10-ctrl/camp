@@ -8,6 +8,7 @@ import {
   hexToCss,
   hslToHex,
   parseSwarmOrbId,
+  projectSwarmToPlane,
   shortPersonaLabel,
   talkingPairAt,
   toneForIndex,
@@ -101,6 +102,23 @@ describe("talkingPairAt", () => {
 
   it("fails on an empty graph", () => {
     expect(talkingPairAt(0, []).ok).toBe(false);
+  });
+});
+
+describe("projectSwarmToPlane", () => {
+  it("keeps mapped points inside the stage", () => {
+    const point = projectSwarmToPlane({ x: 400, y: 200, z: -300 });
+    expect(point.x).toBeGreaterThanOrEqual(8);
+    expect(point.x).toBeLessThanOrEqual(92);
+    expect(point.y).toBeGreaterThanOrEqual(8);
+    expect(point.y).toBeLessThanOrEqual(92);
+  });
+
+  it("places the origin near center", () => {
+    const point = projectSwarmToPlane({ x: 0, y: 6, z: 8 });
+    expect(point.x).toBeCloseTo(50, 0);
+    expect(point.y).toBeGreaterThan(30);
+    expect(point.y).toBeLessThan(60);
   });
 });
 
