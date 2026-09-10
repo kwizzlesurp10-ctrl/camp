@@ -389,6 +389,7 @@ export function CampSwarmCanvas({
         lastTalkKey = "";
       }
 
+      const isUserTalk = liveTalk !== null;
       const talkingIds = new Set(
         directedTalk ? [directedTalk.fromId, directedTalk.toId] : [],
       );
@@ -398,6 +399,7 @@ export function CampSwarmCanvas({
         const personaId = String(node.userData.personaId ?? "");
         const selected = selectedIdRef.current === personaId;
         const speaking = talkingIds.has(personaId);
+        const activeGreen = speaking && isUserTalk;
         const thinking = isThinkingRef.current && !speaking;
         const thinkPulse = thinking ? 0.3 + 0.3 * Math.sin(clock * 3.5 + Number(node.userData.phase ?? 0)) : 0;
         const pulse = 0.6 + 0.4 * Math.sin(clock * 1.9 + Number(node.userData.phase ?? 0));
@@ -410,7 +412,7 @@ export function CampSwarmCanvas({
             node.userData.originalHex = originalHex;
             node.userData.originalEmissiveHex = originalEmissiveHex;
           }
-          if (speaking) {
+          if (activeGreen) {
             node.material.color.setHex(ACTIVE_TONE.hex);
             node.material.emissive.setHex(ACTIVE_TONE.emissiveHex);
             node.material.metalness = 0.1;
@@ -432,13 +434,13 @@ export function CampSwarmCanvas({
             node.material.metalness = 0.25;
           }
           node.material.emissiveIntensity =
-            (speaking ? 3.6 : selected ? 2.4 : thinking ? 1.8 : 1.4) + pulse * (speaking ? 0.8 : 1.4);
+            (activeGreen ? 3.6 : selected || speaking ? 2.4 : thinking ? 1.8 : 1.4) + pulse * (activeGreen ? 0.8 : 1.4);
         }
         const light = node.userData.light;
         if (light instanceof THREE.PointLight) {
           light.position.copy(node.position);
-          light.color.setHex(speaking ? ACTIVE_TONE.hex : (Number(node.userData.originalHex) || 0x00ccdd));
-          light.intensity = (speaking ? 28 : selected ? 18 : thinking ? 14 : 10) + pulse * 14;
+          light.color.setHex(activeGreen ? ACTIVE_TONE.hex : (Number(node.userData.originalHex) || 0x00ccdd));
+          light.intensity = (activeGreen ? 28 : selected || speaking ? 18 : thinking ? 14 : 10) + pulse * 14;
         }
       });
 
@@ -448,7 +450,7 @@ export function CampSwarmCanvas({
       dock.mesh.scale.setScalar(dockPulse);
       dock.light.intensity = talkingIds.has(DIRECTOR_SPEAKER_ID) ? 22 : 8;
 
-      updateDirectedLink(directed, directedTalk, swarm.orbs, clock, orbById);
+      updateDirectedLink(directed, directedTalk, swarm.orbs, clock, orbById, isUserTalk);
 
       linkObjects.forEach((item, index) => {
         const talking =
@@ -827,6 +829,7 @@ function updateDirectedLink(
   orbs: SwarmOrb[],
   clock: number,
   orbById: Map<string, THREE.Mesh>,
+  isUserTalk: boolean = false,
 ): void {
   const show = talk !== null;
   setDirectedOpacity(directed, show ? 0.95 : 0);
@@ -847,7 +850,9 @@ function updateDirectedLink(
   directed.line.geometry.dispose();
   directed.line.geometry = new THREE.BufferGeometry().setFromPoints(curve.getPoints(40));
   if (directed.line.material instanceof THREE.LineBasicMaterial) {
-    directed.line.material.color.setHex(ACTIVE_TONE.hex);
+    const fromOrb = findOrb(orbs, talk.fromId);
+    const lineColor = isUserTalk ? ACTIVE_TONE.hex : (fromOrb.ok ? fromOrb.value.tone.hex : 0x9ef6ff);
+    directed.line.material.color.setHex(lineColor);
   }
 
   const t = (clock * 0.55) % 1;
