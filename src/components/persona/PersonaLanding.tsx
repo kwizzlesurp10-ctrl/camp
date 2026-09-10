@@ -212,7 +212,7 @@ export function PersonaLanding(): React.ReactElement {
           </div>
         </div>
 
-        <p className="text-sm text-zinc-500 mb-6">
+        <p className="text-sm text-zinc-400 mb-6">
           Showing {filtered.length} of {PERSONAS.length} archetypes
           {filter.query ? ` matching "${filter.query}"` : ""}
         </p>
@@ -250,13 +250,13 @@ export function PersonaLanding(): React.ReactElement {
                   <span className="text-emerald-400 text-sm">{isOpen ? "▾" : "▸"}</span>
                 </summary>
                 <div className="px-6 sm:px-8 pb-8 pt-2">
-                  <p className="text-sm text-zinc-500 mb-6">{cluster.description}</p>
+                  <p className="text-sm text-zinc-400 mb-6">{cluster.description}</p>
                   {clusterPersonas.length === 0 ? (
                     <div className="py-12 flex flex-col items-center gap-3 text-center">
                       <div className="w-10 h-10 rounded-2xl bg-zinc-800 flex items-center justify-center text-xl" aria-hidden>
                         🔍
                       </div>
-                      <p className="text-zinc-500 text-sm">No archetypes match your filters in this cluster.</p>
+                      <p className="text-zinc-400 text-sm">No archetypes match your filters in this cluster.</p>
                       <button
                         type="button"
                         onClick={() => setFilter(INITIAL_FILTER)}
@@ -285,7 +285,7 @@ export function PersonaLanding(): React.ReactElement {
           })}
         </div>
 
-        <footer className="mt-12 pt-8 border-t border-zinc-800 text-xs text-zinc-500 flex flex-col md:flex-row md:items-center gap-y-2 justify-between">
+        <footer className="mt-12 pt-8 border-t border-zinc-800 text-xs text-zinc-400 flex flex-col md:flex-row md:items-center gap-y-2 justify-between">
           <div>
             Generated for staff training, agentic simulations, UI/UX prototyping, and
             multi-agent orchestration.
@@ -329,7 +329,7 @@ function StatPill({
         accent ? "border-emerald-500/30 bg-emerald-500/5" : "border-zinc-800 bg-zinc-900/50",
       ].join(" ")}
     >
-      <p className="text-[10px] uppercase tracking-widest text-zinc-500">{label}</p>
+      <p className="text-[10px] uppercase tracking-widest text-zinc-400">{label}</p>
       <p className={`text-2xl font-semibold ${accent ? "text-emerald-400" : "text-zinc-100"}`}>
         {value}
       </p>

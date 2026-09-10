@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { startTransition, useEffect, useRef, useState } from "react";
 import type { Persona } from "@/data/personas";
 import { getClusterById } from "@/data/personas";
 import { PersonaTag } from "@/components/persona/PersonaTag";
@@ -51,8 +51,12 @@ export function PersonaDetailPanel({
   }, [persona]);
 
   const handleClose = () => {
-    startViewTransition(() => {
-      onClose();
+    requestAnimationFrame(() => {
+      startViewTransition(() => {
+        startTransition(() => {
+          onClose();
+        });
+      });
     });
   };
 
@@ -69,7 +73,7 @@ export function PersonaDetailPanel({
         onClick={handleClose}
         style={{ viewTransitionName: TRANSITION_NAMES.personaBackdrop }}
       />
-      <aside
+      <div
         ref={panelRef}
         role="dialog"
         aria-modal="true"
@@ -98,7 +102,7 @@ export function PersonaDetailPanel({
           shareHref={shareHref}
           printHref={printHref}
         />
-      </aside>
+      </div>
     </>
   );
 }
@@ -185,7 +189,7 @@ function DetailContent({
         <h2 id="persona-detail-title" className="text-3xl font-semibold tracking-tight">
           {persona.title}
         </h2>
-        <p className="text-xs text-zinc-500 font-mono mt-1">/{persona.id}</p>
+        <p className="text-xs text-zinc-400 font-mono mt-1">/{persona.id}</p>
         <div className="flex flex-wrap gap-2 mt-3">
           {persona.tags.map((tag) => (
             <PersonaTag key={tag.label} label={tag.label} accent={tag.accent} />
@@ -212,7 +216,7 @@ function DetailContent({
       <DetailBlock label="Teen Communication" body={persona.teenCommunication} />
 
       <div>
-        <p className="text-xs uppercase tracking-[1.5px] text-zinc-500 mb-3">Traits</p>
+        <p className="text-xs uppercase tracking-[1.5px] text-zinc-400 mb-3">Traits</p>
         <div className="flex flex-wrap gap-2">
           {persona.traits.map((trait) => (
             <span
@@ -234,7 +238,7 @@ function DetailContent({
             "w-full py-3 rounded-2xl font-medium text-sm transition-all duration-200",
             copied === "json"
               ? "bg-emerald-700/80 text-emerald-200 cursor-default"
-              : "bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white",
+              : "bg-emerald-700 hover:bg-emerald-600 active:scale-[0.98] text-white",
           ].join(" ")}
         >
           {copied === "json" ? "Copied ✓" : "Copy agent JSON"}
@@ -269,7 +273,7 @@ function DetailContent({
           href={`/api/personas/${persona.id}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="block w-full py-2.5 rounded-2xl border border-zinc-800 text-center text-zinc-500 font-mono text-xs hover:text-zinc-300 hover:border-zinc-700 transition-colors"
+          className="block w-full py-2.5 rounded-2xl border border-zinc-800 text-center text-zinc-400 font-mono text-xs hover:text-zinc-200 hover:border-zinc-700 transition-colors"
         >
           GET /api/personas/{persona.id}
         </a>
@@ -289,7 +293,7 @@ function DetailBlock({
 }): React.ReactElement {
   return (
     <div>
-      <p className="text-xs uppercase tracking-[1.5px] text-zinc-500 mb-2">{label}</p>
+      <p className="text-xs uppercase tracking-[1.5px] text-zinc-400 mb-2">{label}</p>
       {body ? <p className="text-zinc-300 text-sm leading-relaxed">{body}</p> : children}
     </div>
   );

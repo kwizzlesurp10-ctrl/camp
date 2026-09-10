@@ -98,13 +98,13 @@ export function PersonaCard({
 
       <div className="flex-1 space-y-3 text-sm mt-4">
         <div>
-          <p className="text-[10px] uppercase tracking-[1.5px] text-zinc-500 mb-1">Essence</p>
+          <p className="text-[10px] uppercase tracking-[1.5px] text-zinc-400 mb-1">Essence</p>
           <p className="text-zinc-300 leading-relaxed line-clamp-3 group-hover:line-clamp-none">
             {persona.essence}
           </p>
         </div>
         <div>
-          <p className="text-[10px] uppercase tracking-[1.5px] text-zinc-500 mb-1">Teen Communication</p>
+          <p className="text-[10px] uppercase tracking-[1.5px] text-zinc-400 mb-1">Teen Communication</p>
           <p className="text-xs text-zinc-400 italic line-clamp-2">
             {persona.teenCommunication}
           </p>
@@ -132,7 +132,7 @@ export function PersonaCard({
             "text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-full border transition-all duration-200 shrink-0 font-semibold",
             isCompared
               ? "border-amber-500/60 text-amber-300 bg-amber-500/15 hover:bg-amber-500/25"
-              : "border-zinc-700 text-zinc-500 hover:border-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50",
+              : "border-zinc-700 text-zinc-400 hover:border-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50",
           ].join(" ")}
           aria-pressed={isCompared}
         >
