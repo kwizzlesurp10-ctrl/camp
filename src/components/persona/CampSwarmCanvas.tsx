@@ -849,10 +849,16 @@ function updateDirectedLink(
   const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
   directed.line.geometry.dispose();
   directed.line.geometry = new THREE.BufferGeometry().setFromPoints(curve.getPoints(40));
+  const fromOrb = findOrb(orbs, talk.fromId);
+  const linkColor = isUserTalk ? ACTIVE_TONE.hex : (fromOrb.ok ? fromOrb.value.tone.hex : 0x9ef6ff);
   if (directed.line.material instanceof THREE.LineBasicMaterial) {
-    const fromOrb = findOrb(orbs, talk.fromId);
-    const lineColor = isUserTalk ? ACTIVE_TONE.hex : (fromOrb.ok ? fromOrb.value.tone.hex : 0x9ef6ff);
-    directed.line.material.color.setHex(lineColor);
+    directed.line.material.color.setHex(linkColor);
+  }
+  if (directed.pulse.material instanceof THREE.MeshBasicMaterial) {
+    directed.pulse.material.color.setHex(linkColor);
+  }
+  if (directed.arrow.material instanceof THREE.MeshBasicMaterial) {
+    directed.arrow.material.color.setHex(linkColor);
   }
 
   const t = (clock * 0.55) % 1;
