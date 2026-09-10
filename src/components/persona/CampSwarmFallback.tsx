@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { PERSONAS } from "@/data/personas";
 import {
+  ACTIVE_TONE,
   buildCampSwarm,
   findOrb,
   projectSwarmToPlane,
@@ -32,6 +33,7 @@ type CampSwarmFallbackProps = {
   showStatus?: boolean;
   placements?: OrbPlacements;
   onPlaceOrb?: (personaId: string, position: Vec3) => void;
+  isThinking?: boolean;
 };
 
 type DragSession = {
@@ -48,6 +50,7 @@ export function CampSwarmFallback({
   showStatus = true,
   placements = {},
   onPlaceOrb,
+  isThinking = false,
 }: CampSwarmFallbackProps): React.ReactElement {
   const swarm = buildCampSwarm(PERSONAS);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -117,7 +120,7 @@ export function CampSwarmFallback({
               y1={line.y1}
               x2={line.x2}
               y2={line.y2}
-              stroke={active ? "#c8ffff" : "#3ec8e0"}
+              stroke={active ? ACTIVE_TONE.css : "#3ec8e0"}
               strokeOpacity={active ? 0.85 : link.kind === "cluster" ? 0.35 : 0.2}
               strokeWidth={active ? 0.7 : 0.28}
             />
@@ -145,6 +148,7 @@ export function CampSwarmFallback({
         const speaking =
           activeTalk !== null &&
           (activeTalk.fromId === orb.personaId || activeTalk.toId === orb.personaId);
+        const thinking = isThinking && !speaking;
         return (
           <button
             key={orb.personaId}
@@ -195,17 +199,19 @@ export function CampSwarmFallback({
             }}
           >
             <span
-              className="mx-auto block rounded-full"
+              className={["mx-auto block rounded-full", thinking ? "animate-pulse" : ""].join(" ")}
               style={{
-                width: selected || speaking ? 22 : 16,
-                height: selected || speaking ? 22 : 16,
-                backgroundColor: orb.tone.css,
-                boxShadow: `0 0 ${speaking ? 22 : 12}px ${orb.tone.css}`,
+                width: selected || speaking ? 22 : thinking ? 18 : 16,
+                height: selected || speaking ? 22 : thinking ? 18 : 16,
+                backgroundColor: speaking ? ACTIVE_TONE.css : thinking ? ACTIVE_TONE.css : orb.tone.css,
+                boxShadow: `0 0 ${speaking ? 26 : thinking ? 18 : 12}px ${speaking || thinking ? ACTIVE_TONE.css : orb.tone.css}`,
+                opacity: thinking ? 0.7 : 1,
+                transition: "background-color 0.4s, box-shadow 0.4s, opacity 0.4s, width 0.3s, height 0.3s",
               }}
             />
             <span
               className="mt-1 block max-w-24 truncate text-[10px] font-semibold tracking-wide uppercase"
-              style={{ color: orb.tone.css }}
+              style={{ color: speaking || thinking ? ACTIVE_TONE.css : orb.tone.css, transition: "color 0.4s" }}
             >
               {orb.shortLabel}
             </span>
@@ -244,7 +250,7 @@ function DirectedPulse({
       y1={from.y}
       x2={to.x}
       y2={to.y}
-      stroke="#e7ffff"
+      stroke={ACTIVE_TONE.css}
       strokeOpacity={0.95}
       strokeWidth={0.9}
     >

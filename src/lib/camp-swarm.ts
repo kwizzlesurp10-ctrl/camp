@@ -9,6 +9,15 @@ import { err, ok, type Result } from "@/lib/result";
 
 export const SWARM_HUE = 186;
 
+export const ACTIVE_TONE: SwarmOrbTone = {
+  hue: 145,
+  saturation: 100,
+  lightness: 50,
+  hex: 0x00ff6a,
+  css: "#00ff6a",
+  emissiveHex: 0x00cc55,
+};
+
 export type Vec3 = {
   x: number;
   y: number;
