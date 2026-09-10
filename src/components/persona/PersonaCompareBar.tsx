@@ -38,12 +38,12 @@ export function PersonaCompareBar({
             <p className="text-sm font-semibold text-amber-300 tracking-tight">
               Staff mix
             </p>
-            <span className="text-xs text-zinc-500 font-mono">{personas.length}/3</span>
+            <span className="text-xs text-zinc-400 font-mono">{personas.length}/3</span>
           </div>
           <button
             type="button"
             onClick={handleClear}
-            className="text-xs text-zinc-500 hover:text-zinc-200 px-3 py-1.5 rounded-lg border border-zinc-800 hover:border-zinc-600 transition-colors"
+            className="text-xs text-zinc-400 hover:text-zinc-200 px-3 py-1.5 rounded-lg border border-zinc-800 hover:border-zinc-600 transition-colors"
           >
             Clear all
           </button>
@@ -77,7 +77,7 @@ function CompareCard({
           type="button"
           aria-label={`Remove ${persona.title} from comparison`}
           onClick={() => onRemove(persona.id)}
-          className="shrink-0 w-6 h-6 flex items-center justify-center rounded-md text-zinc-500 hover:text-zinc-100 hover:bg-zinc-700 transition-colors text-sm font-medium"
+          className="shrink-0 w-6 h-6 flex items-center justify-center rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700 transition-colors text-sm font-medium"
         >
           ✕
         </button>
@@ -97,7 +97,7 @@ function CompareCard({
         {persona.traits.map((trait) => (
           <span
             key={trait}
-            className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 bg-zinc-800 rounded text-zinc-500"
+            className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 bg-zinc-800 rounded text-zinc-400"
           >
             {trait}
           </span>

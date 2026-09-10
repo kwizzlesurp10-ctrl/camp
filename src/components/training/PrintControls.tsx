@@ -14,7 +14,7 @@ export function PrintControls({
       <button
         type="button"
         onClick={() => window.print()}
-        className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium transition-colors"
+        className="px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-sm font-medium transition-colors"
       >
         Save as PDF / Print
       </button>

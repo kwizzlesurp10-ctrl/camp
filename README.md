@@ -51,12 +51,13 @@ npx vitest run src/lib/persona-filters.test.ts
 
 ## Using the app
 
-1. **Home (`/`)** — Full-viewport **bio-swarm staff room**. Twelve counsellor orbs plus a `YOU` dock. Drag orbs to rearrange; click an orb to open the persona drawer. Ask the staff room to send directed reply pulses.
-2. **Archive (`/personas`)** — Clustered cards, search, trait chips, compare (max 3), and an embedded swarm card. Link **Bio-swarm home** returns to `/`.
-3. **Card / orb click** — Opens the detail drawer. URL updates to `/?persona=wide-eyed-rookie` or `/personas?persona=…`.
-4. **Compare** — Toggle **Compare** on archive cards (max 3). Review the amber bar at the bottom.
-5. **Copy agent JSON** — In the drawer, copies structured JSON for prompts and tools.
-6. **Training guide** — Link from the drawer or go to `/training/print`. Add `?persona=<id>` for a single-archetype handout.
+1. **Home (`/`)** — Full-viewport **bio-swarm staff room**. Twelve counsellor orbs plus a `YOU` dock. Drag orbs to rearrange; click an orb to open the persona drawer.
+2. **Ask the staff room** — Type a question or click a suggested scenario. Replies arrive as **camp letters** — handwritten-style mail from whichever counsellor orb responds, with letterhead, postmark, from/to, salutation, body, closing, and signature. On the full-viewport home, letters fold/unfold so the swarm stays visible. Orbs turn green while thinking and speaking.
+3. **Archive (`/personas`)** — Clustered cards, search, trait chips, compare (max 3), and an embedded swarm card. Link **Bio-swarm home** returns to `/`.
+4. **Card / orb click** — Opens the detail drawer. URL updates to `/?persona=wide-eyed-rookie` or `/personas?persona=…`.
+5. **Compare** — Toggle **Compare** on archive cards (max 3). Review the amber bar at the bottom.
+6. **Copy agent JSON** — In the drawer, copies structured JSON for prompts and tools.
+7. **Training guide** — Link from the drawer or go to `/training/print`. Add `?persona=<id>` for a single-archetype handout.
 
 ### Persona IDs
 
