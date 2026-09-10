@@ -11,6 +11,7 @@ import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { PERSONAS } from "@/data/personas";
 import {
+  ACTIVE_TONE,
   buildCampSwarm,
   findOrb,
   formatTalkBeat,
@@ -43,6 +44,7 @@ type CampSwarmCanvasProps = {
   showStatus?: boolean;
   placements?: OrbPlacements;
   onPlaceOrb?: (personaId: string, position: Vec3) => void;
+  isThinking?: boolean;
 };
 
 type TendrilBranch = {
@@ -74,6 +76,7 @@ export function CampSwarmCanvas({
   showStatus = true,
   placements = {},
   onPlaceOrb,
+  isThinking = false,
 }: CampSwarmCanvasProps): React.ReactElement {
   const hostRef = useRef<HTMLDivElement>(null);
   const fallbackRef = useRef<HTMLDivElement>(null);
@@ -83,6 +86,7 @@ export function CampSwarmCanvas({
   const activeTalkRef = useRef(activeTalk);
   const placementsRef = useRef(placements);
   const onPlaceOrbRef = useRef(onPlaceOrb);
+  const isThinkingRef = useRef(isThinking);
 
   useEffect(() => {
     selectedIdRef.current = selectedId;
@@ -90,7 +94,8 @@ export function CampSwarmCanvas({
     activeTalkRef.current = activeTalk;
     placementsRef.current = placements;
     onPlaceOrbRef.current = onPlaceOrb;
-  }, [activeTalk, onPlaceOrb, onSelectPersona, placements, selectedId]);
+    isThinkingRef.current = isThinking;
+  }, [activeTalk, isThinking, onPlaceOrb, onSelectPersona, placements, selectedId]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -393,17 +398,44 @@ export function CampSwarmCanvas({
         const personaId = String(node.userData.personaId ?? "");
         const selected = selectedIdRef.current === personaId;
         const speaking = talkingIds.has(personaId);
+        const thinking = isThinkingRef.current && !speaking;
+        const thinkPulse = thinking ? 0.3 + 0.3 * Math.sin(clock * 3.5 + Number(node.userData.phase ?? 0)) : 0;
         const pulse = 0.6 + 0.4 * Math.sin(clock * 1.9 + Number(node.userData.phase ?? 0));
-        const scaleBoost = (selected ? 0.18 : 0) + (speaking ? 0.16 : 0);
+        const scaleBoost = (selected ? 0.18 : 0) + (speaking ? 0.16 : 0) + (thinking ? 0.06 : 0);
         node.scale.setScalar(1 + pulse * (reduceMotion ? 0.08 : 0.28) + scaleBoost);
         if (node.material instanceof THREE.MeshStandardMaterial) {
+          const originalHex = Number(node.userData.originalHex ?? node.material.color.getHex());
+          const originalEmissiveHex = Number(node.userData.originalEmissiveHex ?? node.material.emissive.getHex());
+          if (!node.userData.originalHex) {
+            node.userData.originalHex = originalHex;
+            node.userData.originalEmissiveHex = originalEmissiveHex;
+          }
+          if (speaking) {
+            node.material.color.setHex(ACTIVE_TONE.hex);
+            node.material.emissive.setHex(ACTIVE_TONE.emissiveHex);
+          } else if (thinking) {
+            node.material.color.lerpColors(
+              new THREE.Color(originalHex),
+              new THREE.Color(ACTIVE_TONE.hex),
+              thinkPulse,
+            );
+            node.material.emissive.lerpColors(
+              new THREE.Color(originalEmissiveHex),
+              new THREE.Color(ACTIVE_TONE.emissiveHex),
+              thinkPulse,
+            );
+          } else {
+            node.material.color.setHex(originalHex);
+            node.material.emissive.setHex(originalEmissiveHex);
+          }
           node.material.emissiveIntensity =
-            (selected || speaking ? 2.4 : 1.4) + pulse * 1.4;
+            (selected || speaking ? 2.4 : thinking ? 1.8 : 1.4) + pulse * 1.4;
         }
         const light = node.userData.light;
         if (light instanceof THREE.PointLight) {
           light.position.copy(node.position);
-          light.intensity = (selected || speaking ? 18 : 10) + pulse * 14;
+          light.color.setHex(speaking ? ACTIVE_TONE.hex : (Number(node.userData.originalHex) || 0x00ccdd));
+          light.intensity = (selected || speaking ? 18 : thinking ? 14 : 10) + pulse * 14;
         }
       });
 
@@ -513,6 +545,7 @@ export function CampSwarmCanvas({
           showStatus={showStatus}
           placements={placements}
           onPlaceOrb={onPlaceOrb}
+          isThinking={isThinking}
         />
       </div>
       <div ref={hostRef} className="pointer-events-none absolute inset-0 z-10" />

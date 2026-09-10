@@ -23,6 +23,7 @@ const CampSwarmCanvas = dynamic(
         activeTalk={null}
         showStatus={false}
         placements={{}}
+        isThinking={false}
       />
     ),
   },
@@ -95,6 +96,7 @@ export function CampSwarm({
       showStatus={!isStage}
       placements={placements}
       onPlaceOrb={onPlaceOrb}
+      isThinking={isPending}
     />
   );
 

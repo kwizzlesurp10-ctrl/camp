@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { PERSONAS, type Persona } from "@/data/personas";
 import { buildDraftStaffReply } from "@/lib/camp-staff-chat";
+import { generateStaffReply } from "@/lib/camp-staff-ai";
 import {
   findOrb,
   shortPersonaLabel,
@@ -327,6 +328,55 @@ export function pairMatchesDirected(
   b: string,
 ): boolean {
   return (fromId === a && toId === b) || (fromId === b && toId === a);
+}
+
+export async function planStaffRoomConversationWithAi(
+  question: string,
+  personas: Persona[] = PERSONAS,
+): Promise<Result<TalkBeat[], string>> {
+  const parsed = parseStaffQuestion(question);
+  if (!parsed.ok) return parsed;
+
+  const responders = selectResponders(parsed.value, personas);
+  if (!responders.ok) return responders;
+
+  const [primary, secondary] = responders.value;
+  if (!primary) return err("Staff room is empty");
+
+  const primaryReply = await generateStaffReply(primary, parsed.value);
+
+  const beats: TalkBeat[] = [
+    {
+      fromId: DIRECTOR_SPEAKER_ID,
+      toId: primary.id,
+      kind: "user-ask",
+      text: parsed.value,
+    },
+    {
+      fromId: primary.id,
+      toId: DIRECTOR_SPEAKER_ID,
+      kind: "staff-reply",
+      text: primaryReply,
+    },
+  ];
+
+  if (secondary) {
+    const secondaryReply = await generateStaffReply(secondary, parsed.value);
+    beats.push({
+      fromId: primary.id,
+      toId: secondary.id,
+      kind: "staff-handoff",
+      text: `${shortPersonaLabel(primary.title)} looping in ${shortPersonaLabel(secondary.title)} — ${secondary.traits[0] ?? secondary.title}.`,
+    });
+    beats.push({
+      fromId: secondary.id,
+      toId: DIRECTOR_SPEAKER_ID,
+      kind: "staff-reply",
+      text: secondaryReply,
+    });
+  }
+
+  return ok(beats);
 }
 
 function complementResponder(
