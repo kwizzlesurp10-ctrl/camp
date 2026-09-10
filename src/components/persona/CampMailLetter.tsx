@@ -12,7 +12,7 @@ export function CampMailLetter({
   letter,
   compact = false,
 }: CampMailLetterProps): React.ReactElement {
-  const [isOpen, setIsOpen] = useState(!compact);
+  const [isOpen, setIsOpen] = useState(true);
 
   if (!isOpen) {
     return (
