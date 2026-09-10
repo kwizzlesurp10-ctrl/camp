@@ -4,7 +4,6 @@ import {
   buildDraftStaffReply,
   buildStaffSystemPrompt,
 } from "@/lib/camp-staff-chat";
-import { shortPersonaLabel } from "@/lib/camp-swarm";
 
 const AI_MODEL = process.env.AI_MODEL ?? "openai/gpt-4o-mini";
 
@@ -15,6 +14,13 @@ function isAiConfigured(): boolean {
     process.env.VERCEL_OIDC_TOKEN
   );
 }
+
+const LETTER_PROMPT_SUFFIX = [
+  "",
+  "Reply as a handwritten camp letter. Use 2–5 short paragraphs.",
+  "Be concrete (cabin, dock, trail, mess hall, blackflies, canoe).",
+  "Do NOT include letterhead, FROM/TO, salutation, or closing — just the body paragraphs.",
+].join("\n");
 
 export async function generateStaffReply(
   persona: Persona,
@@ -28,24 +34,20 @@ export async function generateStaffReply(
     const result = await generateText({
       model: AI_MODEL,
       system: buildStaffSystemPrompt(persona),
-      prompt: question,
-      maxOutputTokens: 280,
+      prompt: `${question}\n${LETTER_PROMPT_SUFFIX}`,
+      maxOutputTokens: 800,
       temperature: 0.8,
     });
 
-    return clipReply(result.text, 200);
+    return clipLetterBody(result.text, 1200);
   } catch {
     return buildDraftStaffReply(persona, question);
   }
 }
 
-function clipReply(text: string, max: number): string {
-  const firstParagraph = text
-    .split("\n")
-    .map((line) => line.trim())
-    .find((line) => line.length > 0);
-
-  const reply = firstParagraph ?? `${shortPersonaLabel("Staff")} is on it.`;
-  if (reply.length <= max) return reply;
-  return `${reply.slice(0, max - 1)}…`;
+function clipLetterBody(text: string, max: number): string {
+  const trimmed = text.trim();
+  if (trimmed.length === 0) return "Standing by at the dock.";
+  if (trimmed.length <= max) return trimmed;
+  return `${trimmed.slice(0, max - 1)}…`;
 }

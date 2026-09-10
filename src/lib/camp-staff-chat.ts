@@ -1,6 +1,7 @@
 import type { Persona } from "@/data/personas";
 import { getClusterById } from "@/data/personas";
 import { toAgentExport, type AgentPersonaExport } from "@/lib/persona-export";
+import { formatCampLetter, renderCampLetterText } from "@/lib/camp-staff-letter";
 
 export type ChatMessage = {
   role: "user" | "staff" | "system";
@@ -110,6 +111,14 @@ export function buildStaffChatPacket(
 }
 
 export function formatStaffChatForMcp(packet: StaffChatPacket): string {
+  const persona = { id: packet.staff.id } as Persona;
+  const letter = formatCampLetter(
+    { ...persona, title: packet.staff.title, tags: [], essence: packet.staff.essence, motivations: [], painPoints: "", teenCommunication: "", traits: packet.staff.traits, clusterId: "experience" },
+    packet.userMessage,
+    packet.draftReply,
+  );
+  const letterText = renderCampLetterText(letter);
+
   return [
     "# Camp staff chat",
     "",
@@ -120,7 +129,12 @@ export function formatStaffChatForMcp(packet: StaffChatPacket): string {
     "## How to use this",
     packet.replyGuidance,
     "",
-    "## Draft reply (in character)",
+    "## Staff letter (in character)",
+    "```",
+    letterText,
+    "```",
+    "",
+    "## Draft reply (raw)",
     packet.draftReply,
     "",
     "## System prompt (for the host model)",

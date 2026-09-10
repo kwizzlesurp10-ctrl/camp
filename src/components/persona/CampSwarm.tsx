@@ -11,6 +11,7 @@ import {
   type OrbPlacements,
 } from "@/lib/camp-swarm-placement";
 import { formatDirectedBeat, type TalkBeat } from "@/lib/camp-swarm-talk";
+import { CampMailLetter } from "@/components/persona/CampMailLetter";
 
 const CampSwarmCanvas = dynamic(
   () => import("./CampSwarmCanvas").then((mod) => mod.CampSwarmCanvas),
@@ -30,6 +31,7 @@ const CampSwarmCanvas = dynamic(
 );
 
 const BEAT_HOLD_MS = 3200;
+const LETTER_HOLD_MS = 12000;
 
 const SUGGESTED_QUESTIONS = [
   "Homesick camper crying at midnight",
@@ -68,9 +70,11 @@ export function CampSwarm({
 
   useEffect(() => {
     if (beats.length === 0 || beatIndex >= beats.length) return undefined;
+    const currentBeat = beats[beatIndex];
+    const hold = currentBeat?.letter ? LETTER_HOLD_MS : BEAT_HOLD_MS;
     const timer = window.setTimeout(() => {
       setBeatIndex((current) => current + 1);
-    }, BEAT_HOLD_MS);
+    }, hold);
     return () => window.clearTimeout(timer);
   }, [beats, beatIndex]);
 
@@ -151,9 +155,13 @@ export function CampSwarm({
         </p>
       ) : null}
       {activeTalk ? (
-        <p className="text-xs leading-relaxed text-cyan-100/80">
-          {formatDirectedBeat(activeTalk, swarm.orbs)}
-        </p>
+        activeTalk.letter && activeTalk.kind === "staff-reply" ? (
+          <CampMailLetter letter={activeTalk.letter} compact={isStage} />
+        ) : (
+          <p className="text-xs leading-relaxed text-cyan-100/80">
+            {formatDirectedBeat(activeTalk, swarm.orbs)}
+          </p>
+        )
       ) : (
         <p className="text-xs text-cyan-300/50">
           Ambient staff-room chatter until you ask a question.

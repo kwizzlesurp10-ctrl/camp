@@ -2,6 +2,7 @@ import { z } from "zod";
 import { PERSONAS, type Persona } from "@/data/personas";
 import { buildDraftStaffReply } from "@/lib/camp-staff-chat";
 import { generateStaffReply } from "@/lib/camp-staff-ai";
+import { formatCampLetter, type CampLetter } from "@/lib/camp-staff-letter";
 import {
   findOrb,
   shortPersonaLabel,
@@ -25,6 +26,7 @@ export type TalkBeat = {
   toId: string;
   kind: TalkBeatKind;
   text: string;
+  letter?: CampLetter;
 };
 
 export const staffQuestionSchema = z
@@ -245,6 +247,9 @@ export function planStaffRoomConversation(
   const [primary, secondary] = responders.value;
   if (!primary) return err("Staff room is empty");
 
+  const primaryBody = draftLetterBody(primary, parsed.value);
+  const primaryLetter = formatCampLetter(primary, parsed.value, primaryBody);
+
   const beats: TalkBeat[] = [
     {
       fromId: DIRECTOR_SPEAKER_ID,
@@ -257,10 +262,13 @@ export function planStaffRoomConversation(
       toId: DIRECTOR_SPEAKER_ID,
       kind: "staff-reply",
       text: compactStaffReply(primary, parsed.value),
+      letter: primaryLetter,
     },
   ];
 
   if (secondary) {
+    const secondaryBody = draftLetterBody(secondary, parsed.value);
+    const secondaryLetter = formatCampLetter(secondary, parsed.value, secondaryBody);
     beats.push({
       fromId: primary.id,
       toId: secondary.id,
@@ -272,6 +280,7 @@ export function planStaffRoomConversation(
       toId: DIRECTOR_SPEAKER_ID,
       kind: "staff-reply",
       text: compactStaffReply(secondary, parsed.value),
+      letter: secondaryLetter,
     });
   }
 
@@ -343,7 +352,8 @@ export async function planStaffRoomConversationWithAi(
   const [primary, secondary] = responders.value;
   if (!primary) return err("Staff room is empty");
 
-  const primaryReply = await generateStaffReply(primary, parsed.value);
+  const primaryBody = await generateStaffReply(primary, parsed.value);
+  const primaryLetter = formatCampLetter(primary, parsed.value, primaryBody);
 
   const beats: TalkBeat[] = [
     {
@@ -356,12 +366,14 @@ export async function planStaffRoomConversationWithAi(
       fromId: primary.id,
       toId: DIRECTOR_SPEAKER_ID,
       kind: "staff-reply",
-      text: primaryReply,
+      text: clip(primaryBody, 160),
+      letter: primaryLetter,
     },
   ];
 
   if (secondary) {
-    const secondaryReply = await generateStaffReply(secondary, parsed.value);
+    const secondaryBody = await generateStaffReply(secondary, parsed.value);
+    const secondaryLetter = formatCampLetter(secondary, parsed.value, secondaryBody);
     beats.push({
       fromId: primary.id,
       toId: secondary.id,
@@ -372,7 +384,8 @@ export async function planStaffRoomConversationWithAi(
       fromId: secondary.id,
       toId: DIRECTOR_SPEAKER_ID,
       kind: "staff-reply",
-      text: secondaryReply,
+      text: clip(secondaryBody, 160),
+      letter: secondaryLetter,
     });
   }
 
@@ -399,6 +412,10 @@ function compactStaffReply(persona: Persona, question: string): string {
     .map((line) => line.trim())
     .find((line) => line.length > 0);
   return clip(firstLine ?? `${shortPersonaLabel(persona.title)} is on it.`, 160);
+}
+
+function draftLetterBody(persona: Persona, question: string): string {
+  return buildDraftStaffReply(persona, question);
 }
 
 function clip(text: string, max: number): string {
