@@ -252,7 +252,7 @@ export function CampSwarmCanvas({
     const burstForTalk = (talk: TalkBeat): void => {
       const fromPos = liveSpeakerPosition(talk.fromId, orbById, swarm.orbs);
       if (!fromPos.ok) return;
-      const color = toneForSpeaker(talk.fromId, swarm.orbs);
+      const color = ACTIVE_TONE.hex;
       const origin = vec3From(fromPos.value);
       const emitter = createTendrilEmitter(origin, color, scene);
       emitter.rings = createPhaseRings(origin, color, scene);
@@ -413,6 +413,7 @@ export function CampSwarmCanvas({
           if (speaking) {
             node.material.color.setHex(ACTIVE_TONE.hex);
             node.material.emissive.setHex(ACTIVE_TONE.emissiveHex);
+            node.material.metalness = 0.1;
           } else if (thinking) {
             node.material.color.lerpColors(
               new THREE.Color(originalHex),
@@ -424,18 +425,20 @@ export function CampSwarmCanvas({
               new THREE.Color(ACTIVE_TONE.emissiveHex),
               thinkPulse,
             );
+            node.material.metalness = 0.25;
           } else {
             node.material.color.setHex(originalHex);
             node.material.emissive.setHex(originalEmissiveHex);
+            node.material.metalness = 0.25;
           }
           node.material.emissiveIntensity =
-            (selected || speaking ? 2.4 : thinking ? 1.8 : 1.4) + pulse * 1.4;
+            (speaking ? 3.6 : selected ? 2.4 : thinking ? 1.8 : 1.4) + pulse * (speaking ? 0.8 : 1.4);
         }
         const light = node.userData.light;
         if (light instanceof THREE.PointLight) {
           light.position.copy(node.position);
           light.color.setHex(speaking ? ACTIVE_TONE.hex : (Number(node.userData.originalHex) || 0x00ccdd));
-          light.intensity = (selected || speaking ? 18 : thinking ? 14 : 10) + pulse * 14;
+          light.intensity = (speaking ? 28 : selected ? 18 : thinking ? 14 : 10) + pulse * 14;
         }
       });
 
@@ -758,11 +761,6 @@ function liveSpeakerPosition(
   return resolveSpeakerPosition(speakerId, orbs);
 }
 
-function toneForSpeaker(speakerId: string, orbs: SwarmOrb[]): number {
-  if (speakerId === DIRECTOR_SPEAKER_ID) return 0x9ef6ff;
-  const orb = findOrb(orbs, speakerId);
-  return orb.ok ? orb.value.tone.hex : 0x00ffff;
-}
 
 function travelToward(link: SwarmLink, talk: TalkBeat, clock: number): number {
   const t = (clock * 0.45) % 1;
@@ -796,7 +794,7 @@ function createDirectedLink(): DirectedLink {
   const line = new THREE.Line(
     new THREE.BufferGeometry(),
     new THREE.LineBasicMaterial({
-      color: 0x9ef6ff,
+      color: ACTIVE_TONE.hex,
       transparent: true,
       opacity: 0,
       blending: THREE.AdditiveBlending,
@@ -805,7 +803,7 @@ function createDirectedLink(): DirectedLink {
   const pulse = new THREE.Mesh(
     new THREE.IcosahedronGeometry(1.6, 0),
     new THREE.MeshBasicMaterial({
-      color: 0x9ef6ff,
+      color: ACTIVE_TONE.hex,
       transparent: true,
       opacity: 0,
       blending: THREE.AdditiveBlending,
@@ -814,7 +812,7 @@ function createDirectedLink(): DirectedLink {
   const arrow = new THREE.Mesh(
     new THREE.ConeGeometry(1.4, 3.4, 8),
     new THREE.MeshBasicMaterial({
-      color: 0xccffff,
+      color: ACTIVE_TONE.hex,
       transparent: true,
       opacity: 0,
       blending: THREE.AdditiveBlending,
@@ -849,7 +847,7 @@ function updateDirectedLink(
   directed.line.geometry.dispose();
   directed.line.geometry = new THREE.BufferGeometry().setFromPoints(curve.getPoints(40));
   if (directed.line.material instanceof THREE.LineBasicMaterial) {
-    directed.line.material.color.setHex(toneForSpeaker(talk.fromId, orbs));
+    directed.line.material.color.setHex(ACTIVE_TONE.hex);
   }
 
   const t = (clock * 0.55) % 1;

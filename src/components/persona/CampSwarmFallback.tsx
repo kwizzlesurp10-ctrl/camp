@@ -120,7 +120,7 @@ export function CampSwarmFallback({
               y1={line.y1}
               x2={line.x2}
               y2={line.y2}
-              stroke={active ? "#c8ffff" : "#3ec8e0"}
+              stroke={active ? ACTIVE_TONE.css : "#3ec8e0"}
               strokeOpacity={active ? 0.85 : link.kind === "cluster" ? 0.35 : 0.2}
               strokeWidth={active ? 0.7 : 0.28}
             />
@@ -250,7 +250,7 @@ function DirectedPulse({
       y1={from.y}
       x2={to.x}
       y2={to.y}
-      stroke="#e7ffff"
+      stroke={ACTIVE_TONE.css}
       strokeOpacity={0.95}
       strokeWidth={0.9}
     >
